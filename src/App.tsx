@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { STATUS, hoje, statusInfo, supabase, type Evento, type Status, type TipoEvento, type Vaga } from './lib'
+import { STATUS, hoje, statusInfo, supabase, type Evento, type Status, type Sugestao, type TipoEvento, type Vaga } from './lib'
 import Login from './Login'
 import MindMap from './MindMap'
 import Kanban from './Kanban'
+import Sugestoes from './Sugestoes'
 import VagaPanel, { type VagaNova } from './VagaPanel'
 
-type Visao = 'mapa' | 'kanban'
+type Visao = 'mapa' | 'kanban' | 'sugestoes'
 
 // Eventos registrados automaticamente quando a vaga muda de etapa
 const EVENTO_DO_STATUS: Partial<Record<Status, TipoEvento>> = {
@@ -17,6 +18,7 @@ export default function App() {
   const [sessao, setSessao] = useState<Session | null | undefined>(undefined)
   const [vagas, setVagas] = useState<Vaga[]>([])
   const [eventos, setEventos] = useState<Evento[]>([])
+  const [sugestoes, setSugestoes] = useState<Sugestao[]>([])
   const [visao, setVisao] = useState<Visao>(() => {
     try { return (localStorage.getItem('visao') as Visao) || 'mapa' } catch { return 'mapa' }
   })
@@ -31,13 +33,16 @@ export default function App() {
   }, [])
 
   const carregar = useCallback(async () => {
-    const [v, e] = await Promise.all([
+    const [v, e, s] = await Promise.all([
       supabase.from('vagas').select('*').order('created_at', { ascending: false }),
       supabase.from('eventos').select('*'),
+      supabase.from('sugestoes').select('*').eq('estado', 'nova')
+        .order('nota', { ascending: false }).order('publicado_em', { ascending: false }),
     ])
-    if (v.error || e.error) return setErro((v.error ?? e.error)!.message)
+    if (v.error || e.error || s.error) return setErro((v.error ?? e.error ?? s.error)!.message)
     setVagas(v.data as Vaga[])
     setEventos(e.data as Evento[])
+    setSugestoes(s.data as Sugestao[])
   }, [])
 
   useEffect(() => { if (sessao) carregar() }, [sessao, carregar])
@@ -90,6 +95,21 @@ export default function App() {
     setAberta(null)
   }
 
+  async function marcarSugestao(s: Sugestao, estado: Sugestao['estado']) {
+    setSugestoes(ss => ss.filter(x => x.id !== s.id))
+    falhou((await supabase.from('sugestoes').update({ estado }).eq('id', s.id)).error)
+  }
+
+  async function salvarSugestao(s: Sugestao) {
+    const { data, error } = await supabase.from('vagas').insert({
+      empresa: s.empresa ?? s.fonte, cargo: s.titulo, link: s.url, origem: s.fonte,
+      local: s.local, status: 'interesse', notas: `Sugestão ${s.nota}/100: ${s.motivos.join('; ')}`,
+    }).select().single()
+    if (falhou(error)) return
+    setVagas(vs => [data as Vaga, ...vs])
+    await marcarSugestao(s, 'salva')
+  }
+
   async function excluirEvento(e: Evento) {
     if (falhou((await supabase.from('eventos').delete().eq('id', e.id)).error)) return
     setEventos(es => es.filter(x => x.id !== e.id))
@@ -121,6 +141,9 @@ export default function App() {
           <div className="alterna">
             <button className={visao === 'mapa' ? 'on' : ''} onClick={() => setVisao('mapa')}>Mapa</button>
             <button className={visao === 'kanban' ? 'on' : ''} onClick={() => setVisao('kanban')}>Kanban</button>
+            <button className={visao === 'sugestoes' ? 'on' : ''} onClick={() => setVisao('sugestoes')}>
+              Sugestões{sugestoes.length > 0 && <span className="badge">{sugestoes.length}</span>}
+            </button>
           </div>
           <button className="btn primary" onClick={() => setAberta('nova')}>+ Vaga</button>
           <button className="btn ghost sair" onClick={() => supabase.auth.signOut()} title="Sair">Sair</button>
@@ -130,7 +153,10 @@ export default function App() {
       {erro && <div className="erro" onClick={() => setErro(null)}>{erro} (toque para fechar)</div>}
 
       <main>
-        {!vagas.length ? (
+        {visao === 'sugestoes' ? (
+          <Sugestoes sugestoes={sugestoes} onSalvar={salvarSugestao}
+            onDescartar={s => marcarSugestao(s, 'descartada')} onRecarregar={carregar} />
+        ) : !vagas.length ? (
           <div className="vazio">
             <p>Nenhuma vaga ainda.</p>
             <button className="btn primary" onClick={() => setAberta('nova')}>Adicionar a primeira</button>

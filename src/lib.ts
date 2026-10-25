@@ -39,7 +39,34 @@ export interface Evento {
   created_at: string
 }
 
-export const STATUS: { id: Status; label: string; cor: string }[] = [
+export interface Sugestao {
+  id: string
+  fonte: string
+  externo_id: string
+  titulo: string
+  empresa: string | null
+  url: string
+  local: string | null
+  resumo: string | null
+  publicado_em: string | null
+  nota: number
+  motivos: string[]
+  estado: 'nova' | 'salva' | 'descartada'
+  created_at: string
+}
+
+export interface PerfilBusca {
+  user_id: string
+  termos_br: string[]
+  termos_global: string[]
+  cargos: string[]
+  competencias: string[]
+  excluir: string[]
+  nota_minima: number
+  ultima_busca: string | null
+}
+
+export const STATUS:{ id: Status; label: string; cor: string }[] = [
   { id: 'interesse', label: 'Interesse', cor: '#8b93a7' },
   { id: 'aplicado', label: 'Aplicado', cor: '#4c8dff' },
   { id: 'em_analise', label: 'Em análise', cor: '#22b3c9' },
