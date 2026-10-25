@@ -1,0 +1,175 @@
+:root {
+  --bg: #f4f5f8;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --text: #1b1e27;
+  --muted: #6b7285;
+  --border: #dfe2ea;
+  --accent: #4c6fff;
+  --danger: #e5534b;
+  --shadow: 0 6px 24px rgba(20, 24, 40, .08);
+  color-scheme: light;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12141b;
+    --surface: #1b1e28;
+    --surface-2: #252935;
+    --text: #e8eaf0;
+    --muted: #8d93a5;
+    --border: #2f3442;
+    --accent: #6d8bff;
+    --shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font-size: 14px; }
+h1, h2, h3, p { margin: 0; }
+input, select, textarea, button { font: inherit; color: inherit; }
+input, select, textarea {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; width: 100%; min-width: 0;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.muted { color: var(--muted); }
+
+.btn {
+  border: 1px solid var(--border); background: var(--surface); border-radius: 8px;
+  padding: 8px 14px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.ghost { background: transparent; }
+.btn.perigo { color: var(--danger); }
+.btn:disabled { opacity: .6; }
+.link { background: none; border: 0; color: var(--accent); cursor: pointer; }
+
+.carregando, .vazio { display: grid; place-items: center; gap: 12px; height: 100%; color: var(--muted); align-content: center; }
+
+/* Login */
+.login { display: grid; place-items: center; height: 100%; padding: 16px; }
+.login-card {
+  width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; display: grid; gap: 12px; box-shadow: var(--shadow); text-align: center;
+}
+.logo { font-size: 40px; }
+.aviso { font-size: 13px; color: var(--muted); }
+
+/* Layout */
+.app { display: flex; flex-direction: column; height: 100%; }
+.topo {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 16px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.marca { font-weight: 700; font-size: 16px; }
+.stats { display: flex; gap: 18px; margin-right: auto; }
+.stats div { display: grid; line-height: 1.1; }
+.stats b { font-size: 18px; }
+.stats small { color: var(--muted); font-size: 11px; }
+.controles { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.busca { width: 160px; }
+.alterna { display: flex; background: var(--surface-2); border-radius: 8px; padding: 3px; }
+.alterna button { border: 0; background: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); }
+.alterna button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.erro { background: var(--danger); color: #fff; padding: 8px 16px; cursor: pointer; }
+main { flex: 1; min-height: 0; position: relative; }
+
+/* Mapa mental */
+.mapa { position: absolute; inset: 0; }
+.react-flow { --xy-background-color: var(--bg); --xy-edge-stroke: var(--border); }
+.react-flow__controls button { background: var(--surface); border-color: var(--border); fill: var(--text); }
+.h-oculto { opacity: 0; pointer-events: none; left: 50% !important; top: 50% !important; }
+.n-centro {
+  width: 140px; height: 70px; border-radius: 35px; display: grid; place-content: center; text-align: center;
+  background: var(--accent); color: #fff; box-shadow: var(--shadow);
+}
+.n-centro strong { font-size: 16px; }
+.n-centro span { font-size: 11px; opacity: .85; }
+.n-ramo {
+  width: 144px; height: 36px; white-space: nowrap; display: flex; align-items: center; gap: 6px; padding: 0 12px;
+  background: var(--surface); border: 2px solid; border-radius: 18px; font-weight: 600; font-size: 13px;
+}
+.n-ramo b { margin-left: auto; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.n-folha {
+  width: 160px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border);
+  border-left: 4px solid; border-radius: 8px; display: grid; gap: 2px; cursor: pointer; box-shadow: var(--shadow);
+}
+.n-folha:hover { border-color: var(--accent); }
+.n-folha strong, .n-folha span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.n-folha span { color: var(--muted); font-size: 12px; }
+.parado { font-style: normal; font-size: 11px; color: #d48a12; }
+
+/* Kanban */
+.kanban { display: flex; gap: 12px; padding: 16px; height: 100%; overflow-x: auto; }
+.coluna {
+  flex: 0 0 240px; display: flex; flex-direction: column; background: var(--surface-2);
+  border-radius: 12px; min-height: 0; border: 2px solid transparent;
+}
+.coluna.sobre { border-color: var(--accent); }
+.coluna header {
+  display: flex; justify-content: space-between; padding: 10px 12px; font-weight: 600;
+  border-top: 4px solid; border-radius: 12px 12px 0 0;
+}
+.coluna header b { color: var(--muted); }
+.cards { display: grid; gap: 8px; padding: 0 8px 8px; overflow-y: auto; align-content: start; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;
+  display: grid; gap: 4px; cursor: grab;
+}
+.card:hover { border-color: var(--accent); }
+.card > span { color: var(--muted); font-size: 12px; }
+.card-topo { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.card-meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--muted); font-size: 11px; }
+.prio { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.prio.p1 { background: var(--danger); }
+.prio.p2 { background: #e8a33d; }
+.prio.p3 { background: var(--muted); }
+
+/* Painel lateral */
+.fundo { position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: 10; }
+.painel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 100vw); z-index: 11;
+  background: var(--surface); box-shadow: var(--shadow); padding: 24px 20px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.fechar { position: absolute; top: 10px; right: 12px; background: none; border: 0; font-size: 26px; cursor: pointer; color: var(--muted); }
+.painel h2 { font-size: 22px; padding-right: 30px; }
+.painel h3 { font-size: 15px; margin-top: 8px; }
+.cargo { color: var(--muted); margin-top: -8px; }
+.chip { align-self: flex-start; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.infos { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; }
+.infos dt { color: var(--muted); }
+.infos dd { margin: 0; overflow-wrap: anywhere; }
+.infos a { color: var(--accent); }
+.notas { background: var(--surface-2); padding: 10px; border-radius: 8px; white-space: pre-wrap; }
+.acoes { display: flex; gap: 8px; justify-content: flex-end; }
+.form { display: grid; gap: 10px; }
+.form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.novo-evento { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.novo-evento input:nth-of-type(2) { grid-column: 1 / -1; }
+.novo-evento button { grid-column: 1 / -1; }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.timeline li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.timeline .ic { font-size: 18px; }
+.timeline div { flex: 1; }
+.timeline small { color: var(--muted); }
+.timeline .x { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 18px; }
+
+@media (max-width: 720px) {
+  .topo { gap: 10px; }
+  .marca { flex: 1; }
+  .controles { display: contents; }
+  .sair { order: 1; }
+  .stats { order: 2; width: 100%; justify-content: space-between; margin: 0; }
+  .busca { order: 3; flex: 1; width: auto; }
+  .alterna { order: 4; }
+  .controles .primary { order: 5; }
+  .kanban { scroll-snap-type: x mandatory; }
+  .coluna { flex-basis: 82vw; scroll-snap-align: center; }
+}

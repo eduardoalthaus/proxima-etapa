@@ -1,0 +1,9 @@
+{
+  "name": "Vagas Remotas",
+  "short_name": "Vagas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12141b",
+  "theme_color": "#4c6fff",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
