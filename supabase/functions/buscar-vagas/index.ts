@@ -22,6 +22,7 @@ type Vaga = {
   local: string | null
   descricao: string
   publicado_em: string | null
+  salario: string | null
   global: boolean // fonte internacional: precisa checar restrição de país
 }
 
@@ -46,6 +47,38 @@ function iso(d: unknown): string | null {
   return isNaN(t.getTime()) ? null : t.toISOString()
 }
 
+const MOEDA: Record<string, string> = { USD: 'US$', EUR: '€', GBP: '£', BRL: 'R$', CAD: 'C$' }
+const PERIODO: Record<string, string> = { annual: 'ano', year: 'ano', yearly: 'ano', month: 'mês', monthly: 'mês', hour: 'hora', hourly: 'hora' }
+const k = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))
+
+function faixa(min: unknown, max: unknown, moeda?: string | null, periodo?: string | null): string | null {
+  const a = Number(min) || 0
+  const b = Number(max) || 0
+  if (!a && !b) return null
+  const m = MOEDA[(moeda ?? 'USD').toUpperCase()] ?? moeda
+  const valor = a && b && a !== b ? `${k(a)}–${k(b)}` : k(a || b)
+  const p = PERIODO[(periodo ?? '').toLowerCase()]
+  return `${m} ${valor}${p ? `/${p}` : ''}`
+}
+
+// Algumas empresas da Gupy colocam a remuneração no texto da vaga
+async function salarioGupy(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (vagas-remotas pessoal)' }, signal: AbortSignal.timeout(15_000) })
+    if (!r.ok) return null
+    const html = await r.text()
+    const dados = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1]
+    if (!dados) return null
+    const job = JSON.parse(dados)?.props?.pageProps?.job ?? {}
+    const texto = semHtml([job.description, job.responsibilities, job.prerequisites, job.relevantExperiences].join(' '))
+    const valores = texto.match(/R\$\s?\d{1,3}(?:\.\d{3})*(?:,\d{2})?/g)
+    if (!valores) return null
+    return [...new Set(valores.map(v => v.replace(/R\$\s?/, 'R$ ')))].slice(0, 2).join(' – ')
+  } catch {
+    return null
+  }
+}
+
 async function getJson(url: string): Promise<any> {
   try {
     const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (vagas-remotas pessoal)' }, signal: AbortSignal.timeout(20_000) })
@@ -62,7 +95,7 @@ async function gupy(termos: string[]): Promise<Vaga[]> {
     getJson(`https://portal.gupy.io/api/job-search/jobs?jobName=${encodeURIComponent(t)}&limit=100&offset=0&workplaceType=remote`)))
   return res.flatMap(r => (r?.data ?? []).map((j: any): Vaga => ({
     fonte: 'Gupy', externo_id: String(j.id), titulo: j.name, empresa: j.careerPageName,
-    url: j.jobUrl, local: 'Brasil (remoto)', descricao: j.description ?? '', publicado_em: iso(j.publishedDate), global: false,
+    url: j.jobUrl, local: 'Brasil (remoto)', descricao: j.description ?? '', publicado_em: iso(j.publishedDate), salario: null, global: false,
   })))
 }
 
@@ -70,7 +103,7 @@ async function remotive(termos: string[]): Promise<Vaga[]> {
   const res = await Promise.all(termos.map(t => getJson(`https://remotive.com/api/remote-jobs?search=${encodeURIComponent(t)}&limit=100`)))
   return res.flatMap(r => (r?.jobs ?? []).map((j: any): Vaga => ({
     fonte: 'Remotive', externo_id: String(j.id), titulo: j.title, empresa: j.company_name, url: j.url,
-    local: j.candidate_required_location, descricao: j.description ?? '', publicado_em: iso(j.publication_date), global: true,
+    local: j.candidate_required_location, descricao: j.description ?? '', publicado_em: iso(j.publication_date), salario: j.salary || null, global: true,
   })))
 }
 
@@ -80,7 +113,8 @@ async function himalayas(termos: string[]): Promise<Vaga[]> {
   return res.flatMap(r => (r?.jobs ?? []).map((j: any): Vaga => ({
     fonte: 'Himalayas', externo_id: j.guid, titulo: j.title, empresa: j.companyName, url: j.applicationLink ?? j.guid,
     local: (j.locationRestrictions ?? []).join(', ') || 'Worldwide',
-    descricao: j.description ?? j.excerpt ?? '', publicado_em: iso(j.pubDate), global: true,
+    descricao: j.description ?? j.excerpt ?? '', publicado_em: iso(j.pubDate),
+    salario: faixa(j.minSalary, j.maxSalary, j.currency, j.salaryPeriod), global: true,
   })))
 }
 
@@ -88,7 +122,8 @@ async function jobicy(termos: string[]): Promise<Vaga[]> {
   const res = await Promise.all(termos.map(t => getJson(`https://jobicy.com/api/v2/remote-jobs?count=50&tag=${encodeURIComponent(t)}`)))
   return res.flatMap(r => (r?.jobs ?? []).map((j: any): Vaga => ({
     fonte: 'Jobicy', externo_id: String(j.id), titulo: j.jobTitle, empresa: j.companyName, url: j.url,
-    local: j.jobGeo, descricao: j.jobDescription ?? j.jobExcerpt ?? '', publicado_em: iso(j.pubDate), global: true,
+    local: j.jobGeo, descricao: j.jobDescription ?? j.jobExcerpt ?? '', publicado_em: iso(j.pubDate),
+    salario: faixa(j.salaryMin, j.salaryMax, j.salaryCurrency, j.salaryPeriod), global: true,
   })))
 }
 
@@ -96,7 +131,8 @@ async function remoteok(): Promise<Vaga[]> {
   const r = await getJson('https://remoteok.com/api')
   return (Array.isArray(r) ? r.slice(1) : []).map((j: any): Vaga => ({
     fonte: 'RemoteOK', externo_id: String(j.id), titulo: j.position, empresa: j.company, url: j.url,
-    local: j.location || 'Worldwide', descricao: j.description ?? '', publicado_em: iso(j.date), global: true,
+    local: j.location || 'Worldwide', descricao: j.description ?? '', publicado_em: iso(j.date),
+    salario: faixa(j.salary_min, j.salary_max, 'USD', 'annual'), global: true,
   }))
 }
 
@@ -166,15 +202,19 @@ async function rodar(perfil: Perfil) {
     const r = pontuar(v, perfil)
     if (!r || r.nota < perfil.nota_minima) continue
     linhas.push({
-      user_id: perfil.user_id, fonte: v.fonte, externo_id: v.externo_id, titulo: v.titulo.trim(),
+      user_id: perfil.user_id, fonte: v.fonte, externo_id: v.externo_id,
+      // Algumas empresas da Gupy prefixam o título com o código interno ("12728266 - ...")
+      titulo: v.titulo.replace(/^\s*\d{4,}\s*[-–|]\s*/, '').trim(), salario: v.salario,
       empresa: v.empresa, url: v.url, local: v.local, resumo: semHtml(v.descricao).slice(0, 400),
       publicado_em: v.publicado_em, nota: r.nota, motivos: r.motivos,
     })
   }
 
-  // ignoreDuplicates mantém o estado (salva/descartada) de sugestões já vistas
+  await Promise.all(linhas.filter(l => l.fonte === 'Gupy').map(async l => { l.salario = await salarioGupy(l.url) }))
+
+  // Atualiza os dados de sugestões já vistas sem tocar no estado (nova/salva/descartada)
   const { error } = await admin.from('sugestoes')
-    .upsert(linhas, { onConflict: 'user_id,fonte,externo_id', ignoreDuplicates: true })
+    .upsert(linhas, { onConflict: 'user_id,fonte,externo_id' })
   if (error) throw error
   await admin.from('perfil_busca').update({ ultima_busca: new Date().toISOString() }).eq('user_id', perfil.user_id)
   return { analisadas: todas.length, aprovadas: linhas.length }

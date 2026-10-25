@@ -48,6 +48,7 @@ export interface Sugestao {
   url: string
   local: string | null
   resumo: string | null
+  salario: string | null
   publicado_em: string | null
   nota: number
   motivos: string[]

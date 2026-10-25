@@ -9,8 +9,9 @@ function haQuanto(d: string | null) {
   return dias <= 0 ? 'hoje' : dias === 1 ? 'ontem' : `há ${dias} dias`
 }
 
-export default function Sugestoes({ sugestoes, onSalvar, onDescartar, onRecarregar }: {
+export default function Sugestoes({ sugestoes, onAplicar, onSalvar, onDescartar, onRecarregar }: {
   sugestoes: Sugestao[]
+  onAplicar: (s: Sugestao) => void
   onSalvar: (s: Sugestao) => void
   onDescartar: (s: Sugestao) => void
   onRecarregar: () => Promise<void>
@@ -20,6 +21,10 @@ export default function Sugestoes({ sugestoes, onSalvar, onDescartar, onRecarreg
   const [msg, setMsg] = useState<string | null>(null)
   const [editando, setEditando] = useState(false)
   const [fonte, setFonte] = useState('todas')
+  // Vagas cuja página de candidatura foi aberta, esperando eu confirmar que enviei
+  const [abertas, setAbertas] = useState<Set<string>>(new Set())
+  const alternar = (id: string, on: boolean) =>
+    setAbertas(a => { const n = new Set(a); if (on) n.add(id); else n.delete(id); return n })
 
   useEffect(() => {
     supabase.from('perfil_busca').select('*').maybeSingle().then(({ data }) => setPerfil(data as PerfilBusca | null))
@@ -70,23 +75,32 @@ export default function Sugestoes({ sugestoes, onSalvar, onDescartar, onRecarreg
       ) : (
         <ul className="sug-lista">
           {lista.map(s => (
-            <li key={s.id} className="sug-card">
+            <li key={s.id} className={`sug-card ${abertas.has(s.id) ? 'aberta' : ''}`}>
               <span className="nota" style={{ background: corNota(s.nota) }} title="Compatibilidade com seu perfil">{s.nota}</span>
               <div className="sug-corpo">
                 <a href={s.url} target="_blank" rel="noreferrer" className="sug-titulo">{s.titulo}</a>
+                <p className={`salario ${s.salario ? '' : 'sem'}`}>💰 {s.salario ?? 'Salário não informado'}</p>
                 <p className="sug-meta">
                   {s.empresa && <strong>{s.empresa}</strong>}
+                  <span>📍 {s.local ?? 'Remoto'}</span>
                   <span>via {s.fonte}</span>
-                  {s.local && <span>{s.local}</span>}
-                  {haQuanto(s.publicado_em) && <span>{haQuanto(s.publicado_em)}</span>}
+                  {haQuanto(s.publicado_em) && <span>🕒 {haQuanto(s.publicado_em)}</span>}
                 </p>
                 <div className="chips">{s.motivos.map(m => <span key={m} className="chip-motivo">{m}</span>)}</div>
-                {s.resumo && <p className="sug-resumo">{s.resumo}</p>}
               </div>
-              <div className="sug-botoes">
-                <button className="btn primary" onClick={() => onSalvar(s)}>+ Mapa</button>
-                <button className="btn ghost" onClick={() => onDescartar(s)}>Descartar</button>
-              </div>
+              {abertas.has(s.id) ? (
+                <div className="sug-botoes confirma">
+                  <span>Enviou a candidatura?</span>
+                  <button className="btn primary" onClick={() => { alternar(s.id, false); onAplicar(s) }}>✓ Apliquei</button>
+                  <button className="btn ghost" onClick={() => alternar(s.id, false)}>Ainda não</button>
+                </div>
+              ) : (
+                <div className="sug-botoes">
+                  <a className="btn primary" href={s.url} target="_blank" rel="noreferrer" onClick={() => alternar(s.id, true)}>Aplicar ↗</a>
+                  <button className="btn" onClick={() => onSalvar(s)} title="Guardar no mapa como Interesse">☆ Depois</button>
+                  <button className="btn ghost" onClick={() => onDescartar(s)}>Descartar</button>
+                </div>
+              )}
             </li>
           ))}
         </ul>

@@ -100,13 +100,15 @@ export default function App() {
     falhou((await supabase.from('sugestoes').update({ estado }).eq('id', s.id)).error)
   }
 
-  async function salvarSugestao(s: Sugestao) {
+  async function salvarSugestao(s: Sugestao, aplicada: boolean) {
     const { data, error } = await supabase.from('vagas').insert({
       empresa: s.empresa ?? s.fonte, cargo: s.titulo, link: s.url, origem: s.fonte,
-      local: s.local, status: 'interesse', notas: `Sugestão ${s.nota}/100: ${s.motivos.join('; ')}`,
+      local: s.local, salario: s.salario, notas: `Sugestão ${s.nota}/100: ${s.motivos.join('; ')}`,
+      status: aplicada ? 'aplicado' : 'interesse', data_aplicacao: aplicada ? hoje() : null,
     }).select().single()
     if (falhou(error)) return
     setVagas(vs => [data as Vaga, ...vs])
+    if (aplicada) await registrarEvento((data as Vaga).id, 'aplicacao', hoje(), `Candidatura enviada pela ${s.fonte}`)
     await marcarSugestao(s, 'salva')
   }
 
@@ -154,7 +156,7 @@ export default function App() {
 
       <main>
         {visao === 'sugestoes' ? (
-          <Sugestoes sugestoes={sugestoes} onSalvar={salvarSugestao}
+          <Sugestoes sugestoes={sugestoes} onAplicar={s => salvarSugestao(s, true)} onSalvar={s => salvarSugestao(s, false)}
             onDescartar={s => marcarSugestao(s, 'descartada')} onRecarregar={carregar} />
         ) : !vagas.length ? (
           <div className="vazio">
