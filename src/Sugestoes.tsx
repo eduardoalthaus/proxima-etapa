@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase, type PerfilBusca, type Sugestao } from './lib'
 
 const corNota = (n: number) => (n >= 75 ? '#2fb86b' : n >= 60 ? '#4c8dff' : '#e8a33d')
+
+function descreverBusca(p: PerfilBusca | null) {
+  if (!p) return ''
+  const lugar = p.abrangencia === 'estado' ? p.estado : [p.cidade, p.estado].filter(Boolean).join('/')
+  const partes = p.modalidades.map(m => m === 'remoto' ? 'remoto' : `${m === 'hibrido' ? 'híbrido' : 'presencial'} em ${lugar}`)
+  const fontes = p.modalidades.includes('remoto') && p.termos_global.length
+    ? 'Gupy, Remotive, Himalayas, Jobicy e RemoteOK' : 'Gupy'
+  return `${partes.join(', ')} · ${fontes}`
+}
 
 function haQuanto(d: string | null) {
   if (!d) return null
@@ -9,26 +18,22 @@ function haQuanto(d: string | null) {
   return dias <= 0 ? 'hoje' : dias === 1 ? 'ontem' : `há ${dias} dias`
 }
 
-export default function Sugestoes({ sugestoes, onAplicar, onSalvar, onDescartar, onRecarregar }: {
+export default function Sugestoes({ sugestoes, perfil, onEditarPerfil, onAplicar, onSalvar, onDescartar, onRecarregar }: {
   sugestoes: Sugestao[]
+  perfil: PerfilBusca | null
+  onEditarPerfil: () => void
   onAplicar: (s: Sugestao) => void
   onSalvar: (s: Sugestao) => void
   onDescartar: (s: Sugestao) => void
   onRecarregar: () => Promise<void>
 }) {
-  const [perfil, setPerfil] = useState<PerfilBusca | null>(null)
   const [buscando, setBuscando] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
-  const [editando, setEditando] = useState(false)
   const [fonte, setFonte] = useState('todas')
   // Vagas cuja página de candidatura foi aberta, esperando eu confirmar que enviei
   const [abertas, setAbertas] = useState<Set<string>>(new Set())
   const alternar = (id: string, on: boolean) =>
     setAbertas(a => { const n = new Set(a); if (on) n.add(id); else n.delete(id); return n })
-
-  useEffect(() => {
-    supabase.from('perfil_busca').select('*').maybeSingle().then(({ data }) => setPerfil(data as PerfilBusca | null))
-  }, [])
 
   async function buscarAgora() {
     setBuscando(true)
@@ -38,7 +43,6 @@ export default function Sugestoes({ sugestoes, onAplicar, onSalvar, onDescartar,
     if (error) return setMsg('A busca falhou. Tente de novo em alguns minutos.')
     const r = data?.resultados?.[0]
     setMsg(r ? `${r.analisadas} vagas analisadas, ${r.aprovadas} passaram no filtro.` : 'Busca concluída.')
-    setPerfil(p => p && { ...p, ultima_busca: new Date().toISOString() })
     await onRecarregar()
   }
 
@@ -52,7 +56,7 @@ export default function Sugestoes({ sugestoes, onAplicar, onSalvar, onDescartar,
         <div>
           <h2>Vagas para o seu perfil</h2>
           <p className="muted">
-            Busca diária às 7h em Gupy, Remotive, Himalayas, Jobicy e RemoteOK
+            Busca diária às 7h · {descreverBusca(perfil)}
             {perfil?.ultima_busca && <> · última: {new Date(perfil.ultima_busca).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</>}
           </p>
         </div>
@@ -61,7 +65,7 @@ export default function Sugestoes({ sugestoes, onAplicar, onSalvar, onDescartar,
             <option value="todas">Todas as fontes</option>
             {fontes.map(f => <option key={f}>{f}</option>)}
           </select>
-          <button className="btn" onClick={() => setEditando(true)}>⚙️ Filtro</button>
+          <button className="btn" onClick={onEditarPerfil}>⚙️ Meu perfil</button>
           <button className="btn primary" onClick={buscarAgora} disabled={buscando}>{buscando ? 'Buscando…' : '🔎 Buscar agora'}</button>
         </div>
       </div>
@@ -106,68 +110,6 @@ export default function Sugestoes({ sugestoes, onAplicar, onSalvar, onDescartar,
         </ul>
       )}
 
-      {editando && perfil && (
-        <FiltroPanel perfil={perfil} onFechar={() => setEditando(false)} onSalvo={p => { setPerfil(p); setEditando(false) }} />
-      )}
     </div>
-  )
-}
-
-const CAMPOS: { k: keyof PerfilBusca; label: string; ajuda: string }[] = [
-  { k: 'termos_br', label: 'Buscas na Gupy (Brasil)', ajuda: 'O que digitar na busca da Gupy, já filtrada para remoto.' },
-  { k: 'termos_global', label: 'Buscas internacionais', ajuda: 'Termos em inglês para Remotive, Himalayas e Jobicy.' },
-  { k: 'cargos', label: 'Cargos que me interessam', ajuda: 'No título da vaga vale +45 pontos.' },
-  { k: 'competencias', label: 'Minhas competências', ajuda: '+4 pontos cada uma encontrada (máx. 30).' },
-  { k: 'excluir', label: 'Descartar se o título tiver', ajuda: 'A vaga é ignorada na hora.' },
-]
-
-function FiltroPanel({ perfil, onFechar, onSalvo }: {
-  perfil: PerfilBusca; onFechar: () => void; onSalvo: (p: PerfilBusca) => void
-}) {
-  const [form, setForm] = useState<Record<string, string>>(() =>
-    Object.fromEntries(CAMPOS.map(c => [c.k, (perfil[c.k] as string[]).join(', ')])))
-  const [notaMinima, setNotaMinima] = useState(perfil.nota_minima)
-  const [salvando, setSalvando] = useState(false)
-
-  async function salvar(e: React.FormEvent) {
-    e.preventDefault()
-    setSalvando(true)
-    const dados = {
-      ...Object.fromEntries(CAMPOS.map(c => [c.k, form[c.k].split(',').map(t => t.trim()).filter(Boolean)])),
-      nota_minima: notaMinima,
-      updated_at: new Date().toISOString(),
-    }
-    const { data } = await supabase.from('perfil_busca').update(dados).eq('user_id', perfil.user_id).select().single()
-    setSalvando(false)
-    if (data) onSalvo(data as PerfilBusca)
-  }
-
-  return (
-    <>
-      <div className="fundo" onClick={onFechar} />
-      <aside className="painel">
-        <button className="fechar" onClick={onFechar} aria-label="Fechar">×</button>
-        <form onSubmit={salvar} className="form">
-          <h2>Filtro de vagas</h2>
-          <p className="muted">Separe os termos por vírgula. Vale a partir da próxima busca.</p>
-          {CAMPOS.map(c => (
-            <label key={c.k}>
-              {c.label}
-              <textarea rows={3} value={form[c.k]} onChange={e => setForm({ ...form, [c.k]: e.target.value })} />
-              <small>{c.ajuda}</small>
-            </label>
-          ))}
-          <label>
-            Nota mínima: <b>{notaMinima}</b>
-            <input type="range" min={20} max={90} step={5} value={notaMinima}
-              onChange={e => setNotaMinima(Number(e.target.value))} />
-          </label>
-          <div className="acoes">
-            <button type="button" className="btn" onClick={onFechar}>Cancelar</button>
-            <button className="btn primary" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar filtro'}</button>
-          </div>
-        </form>
-      </aside>
-    </>
   )
 }

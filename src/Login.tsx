@@ -17,7 +17,7 @@ export default function Login() {
       : await supabase.auth.signInWithPassword({ email, password: senha })
     setCarregando(false)
     if (error) setMsg(error.message.includes('Cadastro fechado') || error.message.includes('Database error')
-      ? 'Cadastro fechado: este tracker é privado.'
+      ? 'Cadastro só por convite. Peça um convite para quem administra a plataforma.'
       : error.message)
     else if (criando) setMsg('Conta criada. Confirme pelo link que chegou no seu e-mail e depois entre.')
   }

@@ -212,3 +212,31 @@ a.btn { text-decoration: none; text-align: center; }
   .confirma span { grid-column: 1 / -1; }
   .alterna button { padding: 5px 8px; }
 }
+
+/* Perfil e conta */
+.onboarding { min-height: 100%; display: grid; place-items: start center; padding: 32px 16px; overflow-y: auto; }
+.onboarding .perfil-form {
+  width: 100%; max-width: 560px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px; box-shadow: var(--shadow);
+}
+.upload {
+  display: flex !important; align-items: center; gap: 12px; padding: 16px; cursor: pointer;
+  border: 2px dashed var(--border); border-radius: 12px; background: var(--surface-2); color: var(--text) !important;
+}
+.upload:hover { border-color: var(--accent); }
+.upload.lendo { opacity: .6; cursor: progress; }
+.upload-icone { font-size: 28px; }
+.upload span { display: grid; gap: 2px; }
+.upload b { font-size: 14px; }
+.aviso-erro { padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); font-size: 13px; }
+.modalidades { border: 0; padding: 0; margin: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.modalidades legend { font-size: 12px; color: var(--muted); margin-bottom: 4px; padding: 0; }
+.modalidades button {
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: 20px; padding: 6px 14px; cursor: pointer;
+}
+.modalidades button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.link.alinhar { justify-self: start; padding: 0; }
+.convite-form { display: flex; gap: 8px; }
+.convites { list-style: none; margin: 0; padding: 0; display: grid; }
+.convites li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.convites .x { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 18px; }

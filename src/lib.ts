@@ -56,8 +56,19 @@ export interface Sugestao {
   created_at: string
 }
 
+export type Nivel = 'junior' | 'pleno' | 'senior'
+export type Modalidade = 'remoto' | 'hibrido' | 'presencial'
+
 export interface PerfilBusca {
   user_id: string
+  nome: string | null
+  nivel: Nivel
+  modalidades: Modalidade[]
+  cidade: string | null
+  estado: string | null
+  abrangencia: 'cidade' | 'estado'
+  curriculo_nome: string | null
+  curriculo_em: string | null
   termos_br: string[]
   termos_global: string[]
   cargos: string[]

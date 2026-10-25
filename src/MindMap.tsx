@@ -6,7 +6,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { STATUS, diasParado, type Evento, type Vaga } from './lib'
 
-type CentroData = { total: number }
+type CentroData = { total: number; nome: string }
 type RamoData = { label: string; cor: string; qtd: number }
 type FolhaData = { vaga: Vaga; cor: string; parado: number | null }
 
@@ -18,7 +18,7 @@ const handles = (
 )
 
 function Centro({ data }: NodeProps<Node<CentroData>>) {
-  return <div className="n-centro">{handles}<strong>Eduardo</strong><span>{data.total} vagas</span></div>
+  return <div className="n-centro">{handles}<strong>{data.nome}</strong><span>{data.total} vagas</span></div>
 }
 
 function Ramo({ data }: NodeProps<Node<RamoData>>) {
@@ -49,11 +49,11 @@ const R_RAMO = 270
 const R_FOLHA = 580
 const PASSO_FOLHA = 190 // distância em px entre folhas vizinhas no mesmo anel
 
-export default function MindMap({ vagas, eventos, onAbrir }: {
-  vagas: Vaga[]; eventos: Evento[]; onAbrir: (v: Vaga) => void
+export default function MindMap({ nome, vagas, eventos, onAbrir }: {
+  nome: string; vagas: Vaga[]; eventos: Evento[]; onAbrir: (v: Vaga) => void
 }) {
   const { nodes, edges } = useMemo(() => {
-    const nodes: Node[] = [{ id: 'centro', type: 'centro', position: { x: -70, y: -35 }, data: { total: vagas.length } }]
+    const nodes: Node[] = [{ id: 'centro', type: 'centro', position: { x: -70, y: -35 }, data: { total: vagas.length, nome } }]
     const edges: Edge[] = []
 
     STATUS.forEach((s, i) => {
@@ -89,7 +89,7 @@ export default function MindMap({ vagas, eventos, onAbrir }: {
       }
     })
     return { nodes, edges }
-  }, [vagas, eventos])
+  }, [nome, vagas, eventos])
 
   return (
     <div className="mapa">

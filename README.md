@@ -20,6 +20,16 @@ Interesse → Aplicado → Em análise → Entrevista → Teste técnico → Ofe
 Mudar a etapa (no kanban ou editando) registra um evento automático no andamento.
 Vagas aguardando resposta há 7+ dias ganham o aviso ⏳.
 
+## Multiusuário
+
+- Cadastro só por convite: o admin (e-mail fixo em `public.e_admin()` e em `src/App.tsx`) convida pelo painel 👤 → Convites.
+- No primeiro acesso a pessoa envia o currículo (PDF ou .docx). O texto é extraído no navegador (pdf.js / mammoth)
+  e analisado por regras em `src/curriculo.ts` com o dicionário de cargos e competências de `src/dicionario.ts`:
+  cargos citados (o topo do currículo pesa mais), competências, anos de experiência → nível, cidade/estado e inglês.
+  O arquivo não é enviado nem guardado; só o perfil de busca revisado pela pessoa.
+- Modalidades: remoto (Gupy + internacionais, se tiver inglês) e híbrido/presencial (Gupy na cidade ou no estado).
+- 👤 → "Excluir minha conta e dados" apaga tudo em cascata (`public.excluir_minha_conta`).
+
 ## Sugestões de vagas
 
 A Edge Function `buscar-vagas` (em `supabase/functions/`) roda todo dia às 7h via `pg_cron` e também pelo botão "Buscar agora".

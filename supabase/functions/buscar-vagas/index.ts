@@ -1,4 +1,4 @@
-// Busca vagas remotas em fontes públicas, pontua contra o perfil de cada usuário
+// Busca vagas em fontes públicas, pontua contra o perfil de cada usuário
 // e grava em `sugestoes` as que passam da nota mínima.
 // Chamada pelo pg_cron (header x-cron-segredo) ou pelo botão "Buscar agora" (JWT do usuário).
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -11,6 +11,11 @@ type Perfil = {
   competencias: string[]
   excluir: string[]
   nota_minima: number
+  nivel: 'junior' | 'pleno' | 'senior'
+  modalidades: ('remoto' | 'hibrido' | 'presencial')[]
+  cidade: string | null
+  estado: string | null
+  abrangencia: 'cidade' | 'estado'
 }
 
 type Vaga = {
@@ -90,12 +95,24 @@ async function getJson(url: string): Promise<any> {
 
 // ---------- fontes ----------
 
-async function gupy(termos: string[]): Promise<Vaga[]> {
-  const res = await Promise.all(termos.map(t =>
-    getJson(`https://portal.gupy.io/api/job-search/jobs?jobName=${encodeURIComponent(t)}&limit=100&offset=0&workplaceType=remote`)))
+const TIPO_GUPY = { remoto: 'remote', hibrido: 'hybrid', presencial: 'on-site' } as const
+const ROTULO: Record<string, string> = { remote: 'Remoto', hybrid: 'Híbrido', 'on-site': 'Presencial' }
+
+async function gupy(p: Perfil): Promise<Vaga[]> {
+  const buscas = p.termos_br.flatMap(t => p.modalidades.flatMap(m => {
+    const q = new URLSearchParams({ jobName: t, limit: '100', offset: '0', workplaceType: TIPO_GUPY[m] })
+    if (m !== 'remoto') {
+      if (!p.estado) return []
+      q.set('state', p.estado)
+      if (p.abrangencia === 'cidade' && p.cidade) q.set('city', p.cidade)
+    }
+    return [`https://portal.gupy.io/api/job-search/jobs?${q}`]
+  }))
+  const res = await Promise.all(buscas.map(getJson))
   return res.flatMap(r => (r?.data ?? []).map((j: any): Vaga => ({
-    fonte: 'Gupy', externo_id: String(j.id), titulo: j.name, empresa: j.careerPageName,
-    url: j.jobUrl, local: 'Brasil (remoto)', descricao: j.description ?? '', publicado_em: iso(j.publishedDate), salario: null, global: false,
+    fonte: 'Gupy', externo_id: String(j.id), titulo: j.name, empresa: j.careerPageName, url: j.jobUrl,
+    local: j.workplaceType === 'remote' ? 'Brasil (remoto)' : `${ROTULO[j.workplaceType] ?? 'Presencial'} · ${[j.city, j.state].filter(Boolean).join('/')}`,
+    descricao: j.description ?? '', publicado_em: iso(j.publishedDate), salario: null, global: false,
   })))
 }
 
@@ -166,11 +183,22 @@ function pontuar(v: Vaga, p: Perfil): { nota: number; motivos: string[] } | null
     motivos.push(skills.slice(0, 6).join(', '))
   }
 
-  if (/(^|[^a-z])(pleno|mid|senior|sr|ii|iii)([^a-z]|$)/.test(titulo)) { nota += 10; motivos.push('nível pleno/sênior') }
-  else if (/especialista|specialist/.test(titulo)) { nota += 5 }
-  if (/(^|[^a-z])(staff|principal|head|director|diretor|vp|lead|lider)([^a-z]|$)/.test(titulo)) { nota -= 15; motivos.push('cargo de liderança') }
+  const junior = /(^|[^a-z])(junior|jr|i)([^a-z]|$)|assistente|auxiliar/.test(titulo)
+  const pleno = /(^|[^a-z])(pleno|pl|mid|ii)([^a-z]|$)/.test(titulo)
+  const senior = /(^|[^a-z])(senior|sr|iii)([^a-z]|$)|especialista|specialist/.test(titulo)
+  if (p.nivel === 'junior') {
+    if (junior) { nota += 10; motivos.push('nível júnior') }
+    if (senior) nota -= 10
+  } else if (p.nivel === 'pleno') {
+    if (pleno) { nota += 10; motivos.push('nível pleno') } else if (senior) nota += 5
+  } else {
+    if (senior) { nota += 10; motivos.push('nível sênior') } else if (pleno) { nota += 5; motivos.push('nível pleno') }
+  }
+  if (p.nivel !== 'senior' && /(^|[^a-z])(staff|principal|head|director|diretor|gerente|vp|lead|lider)([^a-z]|$)/.test(titulo)) {
+    nota -= 15; motivos.push('cargo de liderança')
+  }
 
-  if (!v.global) { nota += 10; motivos.push('Brasil remoto') }
+  if (!v.global) { nota += 10; motivos.push(v.local ?? 'Brasil') }
   else if (/brazil|brasil|latam|latin america|south america/.test(local)) { nota += 5; motivos.push(`aceita ${v.local}`) }
 
   return { nota: Math.max(0, Math.min(100, nota)), motivos }
@@ -179,12 +207,16 @@ function pontuar(v: Vaga, p: Perfil): { nota: number; motivos: string[] } | null
 // ---------- execução ----------
 
 async function rodar(perfil: Perfil) {
+  // Fontes internacionais só têm vagas remotas e em inglês
+  const internacional = perfil.modalidades.includes('remoto') && perfil.termos_global.length > 0
   const [br, ...globais] = await Promise.all([
-    gupy(perfil.termos_br),
-    remotive(perfil.termos_global),
-    himalayas(perfil.termos_global),
-    jobicy(perfil.termos_global),
-    remoteok(),
+    gupy(perfil),
+    ...(internacional ? [
+      remotive(perfil.termos_global),
+      himalayas(perfil.termos_global),
+      jobicy(perfil.termos_global),
+      remoteok(),
+    ] : []),
   ])
   const todas = [br, ...globais].flat()
 

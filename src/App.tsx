@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { STATUS, hoje, statusInfo, supabase, type Evento, type Status, type Sugestao, type TipoEvento, type Vaga } from './lib'
+import { STATUS, hoje, statusInfo, supabase, type Evento, type Status, type PerfilBusca, type Sugestao, type TipoEvento, type Vaga } from './lib'
 import Login from './Login'
 import MindMap from './MindMap'
 import Kanban from './Kanban'
 import Sugestoes from './Sugestoes'
+import PerfilEditor from './PerfilEditor'
+import Conta from './Conta'
 import VagaPanel, { type VagaNova } from './VagaPanel'
 
 type Visao = 'mapa' | 'kanban' | 'sugestoes'
+
+// Quem gerencia os convites (o mesmo e-mail liberado no banco, em public.e_admin)
+const ADMIN = 'admin@exemplo.com'
 
 // Eventos registrados automaticamente quando a vaga muda de etapa
 const EVENTO_DO_STATUS: Partial<Record<Status, TipoEvento>> = {
@@ -19,6 +24,9 @@ export default function App() {
   const [vagas, setVagas] = useState<Vaga[]>([])
   const [eventos, setEventos] = useState<Evento[]>([])
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([])
+  // undefined = ainda carregando; null = usuário novo, sem perfil de busca
+  const [perfil, setPerfil] = useState<PerfilBusca | null | undefined>(undefined)
+  const [painel, setPainel] = useState<'perfil' | 'conta' | null>(null)
   const [visao, setVisao] = useState<Visao>(() => {
     try { return (localStorage.getItem('visao') as Visao) || 'mapa' } catch { return 'mapa' }
   })
@@ -33,13 +41,15 @@ export default function App() {
   }, [])
 
   const carregar = useCallback(async () => {
-    const [v, e, s] = await Promise.all([
+    const [v, e, s, p] = await Promise.all([
       supabase.from('vagas').select('*').order('created_at', { ascending: false }),
       supabase.from('eventos').select('*'),
       supabase.from('sugestoes').select('*').eq('estado', 'nova')
         .order('nota', { ascending: false }).order('publicado_em', { ascending: false }),
+      supabase.from('perfil_busca').select('*').maybeSingle(),
     ])
-    if (v.error || e.error || s.error) return setErro((v.error ?? e.error ?? s.error)!.message)
+    if (v.error || e.error || s.error || p.error) return setErro((v.error ?? e.error ?? s.error ?? p.error)!.message)
+    setPerfil(p.data as PerfilBusca | null)
     setVagas(v.data as Vaga[])
     setEventos(e.data as Evento[])
     setSugestoes(s.data as Sugestao[])
@@ -50,6 +60,15 @@ export default function App() {
 
   if (sessao === undefined) return <div className="carregando">Carregando…</div>
   if (!sessao) return <Login />
+  if (perfil === undefined && !erro) return <div className="carregando">Carregando…</div>
+  if (perfil === null) {
+    return <PerfilEditor perfil={null} primeiroAcesso onSalvo={async p => {
+      setPerfil(p)
+      setVisao('sugestoes')
+      await supabase.functions.invoke('buscar-vagas')
+      await carregar()
+    }} />
+  }
 
   const falhou = (e: { message: string } | null) => { if (e) { setErro(e.message); return true } return false }
 
@@ -148,7 +167,7 @@ export default function App() {
             </button>
           </div>
           <button className="btn primary" onClick={() => setAberta('nova')}>+ Vaga</button>
-          <button className="btn ghost sair" onClick={() => supabase.auth.signOut()} title="Sair">Sair</button>
+          <button className="btn ghost sair" onClick={() => setPainel('conta')} title="Minha conta">👤</button>
         </div>
       </header>
 
@@ -156,7 +175,7 @@ export default function App() {
 
       <main>
         {visao === 'sugestoes' ? (
-          <Sugestoes sugestoes={sugestoes} onAplicar={s => salvarSugestao(s, true)} onSalvar={s => salvarSugestao(s, false)}
+          <Sugestoes sugestoes={sugestoes} perfil={perfil ?? null} onEditarPerfil={() => setPainel('perfil')} onAplicar={s => salvarSugestao(s, true)} onSalvar={s => salvarSugestao(s, false)}
             onDescartar={s => marcarSugestao(s, 'descartada')} onRecarregar={carregar} />
         ) : !vagas.length ? (
           <div className="vazio">
@@ -164,9 +183,16 @@ export default function App() {
             <button className="btn primary" onClick={() => setAberta('nova')}>Adicionar a primeira</button>
           </div>
         ) : visao === 'mapa'
-          ? <MindMap vagas={filtradas} eventos={eventos} onAbrir={setAberta} />
+          ? <MindMap nome={perfil?.nome?.split(' ')[0] || 'Você'} vagas={filtradas} eventos={eventos} onAbrir={setAberta} />
           : <Kanban vagas={filtradas} eventos={eventos} onAbrir={setAberta} onMover={mover} />}
       </main>
+
+      {painel === 'perfil' && perfil && (
+        <PerfilEditor perfil={perfil} onFechar={() => setPainel(null)} onSalvo={p => { setPerfil(p); setPainel(null) }} />
+      )}
+      {painel === 'conta' && (
+        <Conta email={sessao.user.email ?? ''} admin={sessao.user.email === ADMIN} onFechar={() => setPainel(null)} />
+      )}
 
       {aberta && (
         <VagaPanel

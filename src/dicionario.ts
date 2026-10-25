@@ -1,0 +1,116 @@
+// Cargos e competências reconhecidos no currículo. `pt` são as formas em português
+// (a primeira vira termo de busca na Gupy), `en` as equivalentes para vagas internacionais.
+export interface Cargo { area: string; pt: string[]; en: string[] }
+
+export const CARGOS: Cargo[] = [
+  // Tecnologia
+  { area: 'TI', pt: ['analista de sistemas', 'analista de sistemas de informação'], en: ['systems analyst'] },
+  { area: 'TI', pt: ['product engineer', 'engenheiro de produto'], en: ['product engineer'] },
+  { area: 'TI', pt: ['desenvolvedor', 'programador', 'engenheiro de software', 'desenvolvedor de software'], en: ['software engineer', 'developer'] },
+  { area: 'TI', pt: ['desenvolvedor front-end', 'desenvolvedor frontend', 'front-end'], en: ['frontend developer'] },
+  { area: 'TI', pt: ['desenvolvedor back-end', 'desenvolvedor backend', 'back-end'], en: ['backend developer'] },
+  { area: 'TI', pt: ['desenvolvedor full stack', 'fullstack', 'full stack'], en: ['full stack developer'] },
+  { area: 'TI', pt: ['analista de dados', 'cientista de dados', 'engenheiro de dados'], en: ['data analyst', 'data engineer'] },
+  { area: 'TI', pt: ['analista de suporte', 'suporte técnico', 'técnico de suporte', 'help desk', 'service desk'], en: ['technical support', 'it support'] },
+  { area: 'TI', pt: ['analista de infraestrutura', 'analista de redes', 'administrador de redes', 'sysadmin'], en: ['infrastructure engineer', 'system administrator'] },
+  { area: 'TI', pt: ['devops', 'engenheiro de devops', 'sre'], en: ['devops engineer', 'site reliability engineer'] },
+  { area: 'TI', pt: ['analista de qualidade', 'analista de testes', 'qa'], en: ['qa engineer', 'quality assurance'] },
+  { area: 'TI', pt: ['analista de segurança da informação', 'segurança da informação'], en: ['security analyst', 'cybersecurity'] },
+  { area: 'TI', pt: ['analista de processos', 'automação de processos'], en: ['process analyst', 'automation specialist'] },
+  { area: 'TI', pt: ['analista de integração', 'integrações'], en: ['integration engineer', 'integration analyst'] },
+  { area: 'TI', pt: ['analista erp', 'consultor erp', 'implantação de sistemas', 'implantação de erp'], en: ['erp consultant', 'implementation consultant'] },
+  { area: 'TI', pt: ['product manager', 'product owner', 'gerente de produto'], en: ['product manager', 'product owner'] },
+  { area: 'TI', pt: ['ux designer', 'ui designer', 'product designer', 'designer de produto'], en: ['ux designer', 'product designer'] },
+  { area: 'TI', pt: ['scrum master', 'agilista', 'gerente de projetos', 'analista de projetos'], en: ['project manager', 'scrum master'] },
+  { area: 'Negócios', pt: ['analista de negócios', 'analista de requisitos', 'business analyst'], en: ['business analyst'] },
+  // Administrativo e finanças
+  { area: 'Administrativo', pt: ['assistente administrativo', 'auxiliar administrativo', 'analista administrativo'], en: ['administrative assistant'] },
+  { area: 'Administrativo', pt: ['recepcionista', 'secretária', 'secretário'], en: ['receptionist'] },
+  { area: 'Finanças', pt: ['analista financeiro', 'assistente financeiro', 'auxiliar financeiro'], en: ['financial analyst'] },
+  { area: 'Finanças', pt: ['contador', 'analista contábil', 'assistente contábil', 'auxiliar contábil'], en: ['accountant'] },
+  { area: 'Finanças', pt: ['analista fiscal', 'assistente fiscal'], en: ['tax analyst'] },
+  { area: 'Finanças', pt: ['faturista', 'analista de faturamento', 'contas a pagar', 'contas a receber'], en: ['billing analyst', 'accounts payable'] },
+  { area: 'Finanças', pt: ['controller', 'analista de controladoria', 'analista de custos'], en: ['controller', 'cost analyst'] },
+  { area: 'RH', pt: ['analista de rh', 'analista de recursos humanos', 'assistente de rh', 'departamento pessoal'], en: ['hr analyst', 'hr generalist'] },
+  { area: 'RH', pt: ['recrutador', 'analista de recrutamento', 'tech recruiter'], en: ['recruiter', 'talent acquisition'] },
+  { area: 'Jurídico', pt: ['advogado', 'advogada', 'assistente jurídico', 'analista jurídico', 'paralegal'], en: ['lawyer', 'legal counsel', 'paralegal'] },
+  // Comercial, marketing e atendimento
+  { area: 'Comercial', pt: ['vendedor', 'vendedora', 'consultor de vendas', 'consultor comercial', 'representante comercial'], en: ['sales representative'] },
+  { area: 'Comercial', pt: ['executivo de contas', 'executivo comercial', 'key account'], en: ['account executive', 'account manager'] },
+  { area: 'Comercial', pt: ['sdr', 'bdr', 'pré-vendas'], en: ['sales development representative'] },
+  { area: 'Comercial', pt: ['analista comercial', 'assistente comercial', 'inside sales'], en: ['sales analyst', 'inside sales'] },
+  { area: 'Marketing', pt: ['analista de marketing', 'assistente de marketing', 'marketing digital'], en: ['marketing analyst', 'digital marketing'] },
+  { area: 'Marketing', pt: ['social media', 'redator', 'redatora', 'copywriter', 'produtor de conteúdo'], en: ['social media manager', 'copywriter', 'content writer'] },
+  { area: 'Marketing', pt: ['designer gráfico', 'designer', 'diretor de arte'], en: ['graphic designer'] },
+  { area: 'Atendimento', pt: ['atendente', 'operador de telemarketing', 'assistente de atendimento', 'sac'], en: ['customer service representative'] },
+  { area: 'Atendimento', pt: ['customer success', 'sucesso do cliente', 'analista de cs'], en: ['customer success manager'] },
+  // Operações, logística e indústria
+  { area: 'Logística', pt: ['analista de logística', 'assistente de logística', 'auxiliar de logística'], en: ['logistics analyst', 'logistics coordinator'] },
+  { area: 'Logística', pt: ['comprador', 'analista de compras', 'assistente de compras', 'suprimentos'], en: ['buyer', 'procurement analyst'] },
+  { area: 'Logística', pt: ['almoxarife', 'estoquista', 'auxiliar de almoxarifado', 'conferente'], en: ['warehouse associate', 'inventory clerk'] },
+  { area: 'Logística', pt: ['motorista', 'entregador', 'operador de empilhadeira'], en: ['driver', 'forklift operator'] },
+  { area: 'Indústria', pt: ['operador de produção', 'auxiliar de produção', 'operador de máquinas'], en: ['production operator', 'machine operator'] },
+  { area: 'Indústria', pt: ['analista de pcp', 'planejamento e controle da produção'], en: ['production planner'] },
+  { area: 'Indústria', pt: ['analista de qualidade industrial', 'inspetor de qualidade', 'técnico de qualidade'], en: ['quality inspector', 'quality technician'] },
+  { area: 'Indústria', pt: ['técnico em segurança do trabalho', 'segurança do trabalho'], en: ['safety technician', 'ehs specialist'] },
+  { area: 'Indústria', pt: ['eletricista', 'técnico em eletrotécnica', 'eletrotécnico'], en: ['electrician'] },
+  { area: 'Indústria', pt: ['mecânico', 'técnico de manutenção', 'mecânico de manutenção'], en: ['maintenance technician', 'mechanic'] },
+  { area: 'Engenharia', pt: ['engenheiro civil', 'mestre de obras', 'técnico em edificações'], en: ['civil engineer'] },
+  { area: 'Engenharia', pt: ['engenheiro de produção'], en: ['industrial engineer'] },
+  { area: 'Engenharia', pt: ['engenheiro mecânico'], en: ['mechanical engineer'] },
+  { area: 'Engenharia', pt: ['engenheiro eletricista'], en: ['electrical engineer'] },
+  { area: 'Engenharia', pt: ['engenheiro agrônomo', 'agrônomo', 'técnico agrícola'], en: ['agronomist'] },
+  // Saúde e educação
+  { area: 'Saúde', pt: ['enfermeiro', 'enfermeira'], en: ['registered nurse'] },
+  { area: 'Saúde', pt: ['técnico de enfermagem', 'técnica de enfermagem', 'auxiliar de enfermagem'], en: ['nursing technician'] },
+  { area: 'Saúde', pt: ['farmacêutico', 'farmacêutica', 'atendente de farmácia'], en: ['pharmacist'] },
+  { area: 'Saúde', pt: ['fisioterapeuta'], en: ['physical therapist'] },
+  { area: 'Saúde', pt: ['nutricionista'], en: ['nutritionist', 'dietitian'] },
+  { area: 'Saúde', pt: ['psicólogo', 'psicóloga'], en: ['psychologist'] },
+  { area: 'Saúde', pt: ['médico', 'médica'], en: ['physician'] },
+  { area: 'Saúde', pt: ['dentista', 'cirurgião-dentista', 'auxiliar de saúde bucal'], en: ['dentist'] },
+  { area: 'Saúde', pt: ['recepcionista de clínica', 'faturamento hospitalar'], en: ['medical receptionist', 'medical billing'] },
+  { area: 'Educação', pt: ['professor', 'professora', 'docente', 'instrutor', 'tutor'], en: ['teacher', 'instructor', 'tutor'] },
+  { area: 'Educação', pt: ['pedagogo', 'pedagoga', 'coordenador pedagógico'], en: ['educational coordinator'] },
+  // Serviços
+  { area: 'Serviços', pt: ['cozinheiro', 'cozinheira', 'auxiliar de cozinha', 'chef'], en: ['cook', 'chef'] },
+  { area: 'Serviços', pt: ['garçom', 'garçonete', 'barista'], en: ['waiter', 'barista'] },
+  { area: 'Serviços', pt: ['auxiliar de limpeza', 'zelador', 'porteiro'], en: ['janitor', 'cleaner'] },
+  { area: 'Serviços', pt: ['caixa', 'operador de caixa', 'repositor', 'promotor de vendas'], en: ['cashier', 'stocker'] },
+]
+
+export const COMPETENCIAS: string[] = [
+  // ferramentas e sistemas
+  'excel', 'excel avançado', 'power bi', 'tableau', 'looker', 'google sheets', 'pacote office', 'word', 'powerpoint',
+  'sap', 'totvs', 'protheus', 'erp', 'crm', 'salesforce', 'hubspot', 'pipedrive', 'rd station', 'zendesk', 'jira', 'trello', 'notion',
+  'sql', 'postgres', 'postgresql', 'mysql', 'oracle', 'mongodb', 'supabase', 'firebase',
+  'python', 'javascript', 'typescript', 'java', 'c#', '.net', 'php', 'node', 'react', 'angular', 'vue', 'flutter', 'kotlin', 'swift', 'go',
+  'html', 'css', 'git', 'docker', 'kubernetes', 'aws', 'azure', 'gcp', 'linux', 'windows server', 'redes', 'shell script',
+  'api', 'rest', 'webhook', 'integração', 'integration', 'n8n', 'zapier', 'make', 'power automate', 'rpa', 'uipath', 'low-code',
+  'figma', 'photoshop', 'illustrator', 'canva', 'autocad', 'revit', 'sketchup', 'solidworks',
+  'google ads', 'meta ads', 'seo', 'google analytics', 'wordpress', 'e-commerce',
+  // métodos e áreas
+  'automação', 'automation', 'processos', 'mapeamento de processos', 'bpmn', 'lean', 'six sigma', 'kaizen', '5s',
+  'scrum', 'kanban', 'metodologias ágeis', 'gestão de projetos', 'pmbok', 'okr', 'kpi', 'indicadores',
+  'requisitos', 'levantamento de requisitos', 'documentação', 'ia', 'inteligência artificial', 'llm', 'machine learning',
+  'estoque', 'logística', 'compras', 'pcp', 'qualidade', 'iso 9001', 'auditoria', 'infraestrutura', 'suporte técnico',
+  'financeiro', 'contas a pagar', 'contas a receber', 'conciliação bancária', 'fluxo de caixa', 'faturamento', 'orçamento',
+  'contabilidade', 'fiscal', 'sped', 'folha de pagamento', 'departamento pessoal', 'esocial', 'recrutamento e seleção',
+  'vendas', 'negociação', 'prospecção', 'atendimento ao cliente', 'pós-venda', 'telemarketing', 'marketing digital', 'redes sociais',
+  'gestão de equipes', 'liderança', 'treinamento', 'comunicação', 'oratória',
+  // saúde, indústria e campo
+  'nr-10', 'nr-12', 'nr-35', 'nr-33', 'cnh', 'cnh b', 'cnh d', 'cnh e', 'empilhadeira', 'primeiros socorros',
+  'coren', 'crf', 'crn', 'crp', 'crea', 'oab', 'uti', 'pronto atendimento', 'vacinação', 'curativos',
+  'agronegócio', 'agropecuária', 'manutenção', 'elétrica', 'mecânica', 'solda', 'usinagem', 'cnc',
+  // idiomas
+  'inglês', 'espanhol', 'libras',
+]
+
+export const ESTADOS = [
+  ['AC', 'Acre'], ['AL', 'Alagoas'], ['AP', 'Amapá'], ['AM', 'Amazonas'], ['BA', 'Bahia'], ['CE', 'Ceará'],
+  ['DF', 'Distrito Federal'], ['ES', 'Espírito Santo'], ['GO', 'Goiás'], ['MA', 'Maranhão'], ['MT', 'Mato Grosso'],
+  ['MS', 'Mato Grosso do Sul'], ['MG', 'Minas Gerais'], ['PA', 'Pará'], ['PB', 'Paraíba'], ['PR', 'Paraná'],
+  ['PE', 'Pernambuco'], ['PI', 'Piauí'], ['RJ', 'Rio de Janeiro'], ['RN', 'Rio Grande do Norte'],
+  ['RS', 'Rio Grande do Sul'], ['RO', 'Rondônia'], ['RR', 'Roraima'], ['SC', 'Santa Catarina'], ['SP', 'São Paulo'],
+  ['SE', 'Sergipe'], ['TO', 'Tocantins'],
+] as const
