@@ -67,13 +67,17 @@ async function callback(url: URL) {
 
 // A ordem importa: uma recusa costuma mencionar "etapa", um convite de entrevista pode citar "teste"
 const REGRAS: [Tipo, RegExp][] = [
-  ['recusa', /nao (seguiremos|vamos seguir|avancou|avancara|foi selecionad|prosseguir|daremos continuidade)|infelizmente|processo (foi )?(encerrad|finalizad|cancelad)|outr[oa]s? (candidat|perfi)|reprovad|nao foi possivel seguir/],
+  // "Obrigada pelo interesse em fazer parte do nosso time!" é o assunto padrão de recusa da Gupy
+  ['recusa', /nao (seguiremos|vamos seguir|avancou|avancara|foi selecionad|prosseguir|daremos continuidade)|infelizmente|processo (foi )?(encerrad|finalizad|cancelad)|outr[oa]s? (candidat|perfi)|reprovad|nao foi possivel seguir|obrigad[oa] pelo interesse|agradecemos (a )?sua participacao|vaga (foi )?descontinuada|seguiremos em conexao/],
   ['oferta', /proposta|carta oferta|voce foi aprovad|foi contratad|bem[- ]vind[oa] ao time|parabens.{0,40}aprovad/],
   ['entrevista', /entrevista|bate[- ]papo|conversa com (o|a) (gestor|lider|time|rh)/],
-  ['teste', /teste|desafio|case tecnico|avaliacao|fit cultural|prova /],
+  ['teste', /teste|desafio|case tecnico|avaliacao|fit cultural|prova |mapeamento comportamental|etapa (de )?video|concluir etapa/],
   ['candidatura', /candidatura (foi )?(realizada|recebida|enviada|confirmada|concluida)|inscricao (foi )?(realizada|confirmada|concluida)|obrigad[oa] por se (candidatar|inscrever)/],
   ['avanco', /avancou|proxima etapa|nova etapa|mudou de etapa|segue no processo|continua no processo/],
 ]
+
+// E-mails da Gupy que não são sobre uma candidatura: alertas de vaga, banco de talentos, cadastro
+const ALERTA = /^nova vaga|vagas? (recomendad|para voce|que combinam|novas)|novas oportunidades|encontramos vagas|receba vagas|queremos voce no banco de talentos|confirmar seu e-?mail|convite pra conhecer/
 
 function classificar(texto: string): Tipo {
   const t = norm(texto)
@@ -148,18 +152,25 @@ async function lerConexao(userId: string) {
   if (!c) return { lidos: 0 }
   try {
     const t = await token({ grant_type: 'refresh_token', refresh_token: c.refresh_token })
-    const desde = c.ultima_leitura ?? new Date(Date.now() - DIAS_INICIAIS * 86_400_000).toISOString()
+    // Graph exige ISO com Z; o banco devolve "+00:00", e o "+" se perderia na URL
+    const desde = new Date(c.ultima_leitura ?? Date.now() - DIAS_INICIAIS * 86_400_000).toISOString()
     const inicio = new Date().toISOString()
 
+    // Busca só e-mails cujo remetente cita "gupy", em qualquer pasta, independente do volume da caixa.
+    // $search não aceita $filter/$orderby junto, então o corte por data é feito aqui.
     const msgs: any[] = []
-    let url: string | null = `/me/messages?$filter=receivedDateTime ge ${desde}&$orderby=receivedDateTime asc` +
+    let url: string | null = `/me/messages?$search=${encodeURIComponent('"from:gupy"')}` +
       '&$top=50&$select=id,subject,from,receivedDateTime,bodyPreview,body'
-    for (let pagina = 0; url && pagina < 10; pagina++) {
+    for (let pagina = 0; url && pagina < 20; pagina++) {
       const r = await graph(url, t.access_token)
       msgs.push(...r.value)
       url = r['@odata.nextLink'] ?? null
     }
-    const daGupy = msgs.filter(m => /gupy/i.test(m.from?.emailAddress?.address ?? ''))
+    // Só e-mails da Gupy desde a última leitura, sem os alertas de "nova vaga para você"
+    const daGupy = msgs
+      .filter(m => m.receivedDateTime >= desde)
+      .filter(m => /gupy/i.test(m.from?.emailAddress?.address ?? '') && !ALERTA.test(norm(m.subject ?? '')))
+      .sort((a, b) => a.receivedDateTime.localeCompare(b.receivedDateTime))
 
     const { data: vagas } = await admin.from('vagas').select('id, empresa, cargo, link, status').eq('user_id', userId)
     const lista = (vagas ?? []) as Vaga[]
@@ -188,7 +199,17 @@ async function lerConexao(userId: string) {
     }
 
     await admin.from('conexoes_email').update({ refresh_token: t.refresh_token, ultima_leitura: inicio, erro: null }).eq('user_id', userId)
-    return { lidos: daGupy.length }
+    // Resumo dos remetentes ajuda a ver se a Gupy usa algum endereço que o filtro não pega
+    const dominios: Record<string, number> = {}
+    for (const m of msgs) {
+      const d = (m.from?.emailAddress?.address ?? '?').split('@').pop()!.toLowerCase()
+      dominios[d] = (dominios[d] ?? 0) + 1
+    }
+    const principais = Object.entries(dominios).sort((a, b) => b[1] - a[1]).slice(0, 15)
+    // Assuntos que ficaram de fora (alerta ou antigos), para conferir se o filtro está certo
+    const ignorados = msgs.filter(m => !daGupy.includes(m))
+      .map(m => `${m.receivedDateTime.slice(0, 10)} ${m.subject ?? ''}`).sort().reverse().slice(0, 50)
+    return { lidos: daGupy.length, analisados: msgs.length, principais, ignorados }
   } catch (err) {
     const msg = String((err as Error).message ?? err)
     await admin.from('conexoes_email').update({
@@ -220,7 +241,9 @@ Deno.serve(async req => {
     if (segredo) {
       const { data } = await admin.from('config_privada').select('valor').eq('chave', 'cron_segredo').single()
       if (!data || data.valor !== segredo) return json({ erro: 'não autorizado' }, 401)
-      const { data: conexoes } = await admin.from('conexoes_email').select('user_id').is('erro', null)
+      // Erros passageiros não param a leitura automática; só a autorização expirada (que exige reconectar)
+      const { data: conexoes } = await admin.from('conexoes_email').select('user_id, erro')
+        .or('erro.is.null,erro.not.like.A autorização expirou*')
       const resultados = []
       for (const c of conexoes ?? []) resultados.push(await lerConexao(c.user_id).catch(e => ({ erro: String(e) })))
       return json({ ok: true, resultados })
