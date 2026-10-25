@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './lib'
+import { supabase, type Vaga } from './lib'
+import EmailsGupy from './EmailsGupy'
 
 type Convite = { email: string; convidado_em: string }
 
-export default function Conta({ email, admin, onFechar }: { email: string; admin: boolean; onFechar: () => void }) {
+export default function Conta({ email, admin, vagas, onAtualizou, onFechar }: {
+  email: string; admin: boolean; vagas: Vaga[]; onAtualizou: () => Promise<void>; onFechar: () => void
+}) {
   const [convites, setConvites] = useState<Convite[]>([])
   const [novo, setNovo] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
@@ -46,6 +49,8 @@ export default function Conta({ email, admin, onFechar }: { email: string; admin
         <div className="acoes">
           <button className="btn" onClick={() => supabase.auth.signOut()}>Sair</button>
         </div>
+
+        <EmailsGupy vagas={vagas} onAtualizou={onAtualizou} />
 
         {admin && (
           <>

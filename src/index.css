@@ -265,3 +265,12 @@ a.btn { text-decoration: none; text-align: center; }
 .check { display: flex !important; align-items: center; gap: 8px; }
 .check input { width: auto; }
 @media (max-width: 720px) { .tres-hab { grid-template-columns: 1fr; } }
+
+/* E-mails da Gupy */
+.emails-gupy { display: grid; gap: 8px; }
+.alinhar-esq { justify-content: flex-start; }
+.emails { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 360px; overflow-y: auto; }
+.emails li { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; }
+.email-topo { display: flex; justify-content: space-between; align-items: center; }
+.email-tipo { font-size: 12px; font-weight: 600; }
+.emails select { font-size: 12px; padding: 4px 8px; }

@@ -62,6 +62,15 @@ export default function App() {
   useEffect(() => { if (sessao) carregar() }, [sessao, carregar])
   useEffect(() => { try { localStorage.setItem('visao', visao) } catch { /* sem storage */ } }, [visao])
 
+  // Volta do login da Microsoft: ?outlook=ok|erro
+  useEffect(() => {
+    const r = new URLSearchParams(location.search).get('outlook')
+    if (!r) return
+    history.replaceState(null, '', location.pathname)
+    setPainel('conta')
+    if (r !== 'ok') setErro('Não foi possível conectar o Outlook. Tente de novo pelo painel 👤.')
+  }, [])
+
   if (sessao === undefined) return <div className="carregando">Carregando…</div>
   if (!sessao) return <Login />
   if (perfil === undefined && !erro) return <div className="carregando">Carregando…</div>
@@ -199,7 +208,8 @@ export default function App() {
         <Modelos modelos={modelos} onMudou={setModelos} onFechar={() => setPainel(null)} />
       )}
       {painel === 'conta' && (
-        <Conta email={sessao.user.email ?? ''} admin={sessao.user.email === ADMIN} onFechar={() => setPainel(null)} />
+        <Conta email={sessao.user.email ?? ''} admin={sessao.user.email === ADMIN} vagas={vagas} onAtualizou={carregar}
+          onFechar={() => setPainel(null)} />
       )}
 
       {aberta && (
