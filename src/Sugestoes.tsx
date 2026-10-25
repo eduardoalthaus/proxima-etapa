@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { supabase, type PerfilBusca, type Sugestao } from './lib'
+import { supabase, type Modelo, type PerfilBusca, type Sugestao } from './lib'
+import Kit from './Kit'
 
 const corNota = (n: number) => (n >= 75 ? '#2fb86b' : n >= 60 ? '#4c8dff' : '#e8a33d')
 
@@ -18,10 +19,12 @@ function haQuanto(d: string | null) {
   return dias <= 0 ? 'hoje' : dias === 1 ? 'ontem' : `há ${dias} dias`
 }
 
-export default function Sugestoes({ sugestoes, perfil, onEditarPerfil, onAplicar, onSalvar, onDescartar, onRecarregar }: {
+export default function Sugestoes({ sugestoes, perfil, modelos, onEditarPerfil, onGerenciarModelos, onAplicar, onSalvar, onDescartar, onRecarregar }: {
   sugestoes: Sugestao[]
   perfil: PerfilBusca | null
+  modelos: Modelo[]
   onEditarPerfil: () => void
+  onGerenciarModelos: () => void
   onAplicar: (s: Sugestao) => void
   onSalvar: (s: Sugestao) => void
   onDescartar: (s: Sugestao) => void
@@ -65,6 +68,7 @@ export default function Sugestoes({ sugestoes, perfil, onEditarPerfil, onAplicar
             <option value="todas">Todas as fontes</option>
             {fontes.map(f => <option key={f}>{f}</option>)}
           </select>
+          <button className="btn" onClick={onGerenciarModelos}>📝 Modelos</button>
           <button className="btn" onClick={onEditarPerfil}>⚙️ Meu perfil</button>
           <button className="btn primary" onClick={buscarAgora} disabled={buscando}>{buscando ? 'Buscando…' : '🔎 Buscar agora'}</button>
         </div>
@@ -104,6 +108,9 @@ export default function Sugestoes({ sugestoes, perfil, onEditarPerfil, onAplicar
                   <button className="btn" onClick={() => onSalvar(s)} title="Guardar no mapa como Interesse">☆ Depois</button>
                   <button className="btn ghost" onClick={() => onDescartar(s)}>Descartar</button>
                 </div>
+              )}
+              {abertas.has(s.id) && (
+                <Kit modelos={modelos} empresa={s.empresa} cargo={s.titulo} onGerenciar={onGerenciarModelos} />
               )}
             </li>
           ))}

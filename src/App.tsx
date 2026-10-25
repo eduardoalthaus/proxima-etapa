@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { STATUS, hoje, statusInfo, supabase, type Evento, type Status, type PerfilBusca, type Sugestao, type TipoEvento, type Vaga } from './lib'
+import { STATUS, hoje, statusInfo, supabase, type Evento, type Status, type Modelo, type PerfilBusca, type Sugestao, type TipoEvento, type Vaga } from './lib'
 import Login from './Login'
 import MindMap from './MindMap'
 import Kanban from './Kanban'
 import Sugestoes from './Sugestoes'
 import PerfilEditor from './PerfilEditor'
 import Conta from './Conta'
+import Modelos from './Modelos'
 import VagaPanel, { type VagaNova } from './VagaPanel'
 
 type Visao = 'mapa' | 'kanban' | 'sugestoes'
@@ -26,7 +27,8 @@ export default function App() {
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([])
   // undefined = ainda carregando; null = usuário novo, sem perfil de busca
   const [perfil, setPerfil] = useState<PerfilBusca | null | undefined>(undefined)
-  const [painel, setPainel] = useState<'perfil' | 'conta' | null>(null)
+  const [painel, setPainel] = useState<'perfil' | 'conta' | 'modelos' | null>(null)
+  const [modelos, setModelos] = useState<Modelo[]>([])
   const [visao, setVisao] = useState<Visao>(() => {
     try { return (localStorage.getItem('visao') as Visao) || 'mapa' } catch { return 'mapa' }
   })
@@ -41,15 +43,17 @@ export default function App() {
   }, [])
 
   const carregar = useCallback(async () => {
-    const [v, e, s, p] = await Promise.all([
+    const [v, e, s, p, m] = await Promise.all([
       supabase.from('vagas').select('*').order('created_at', { ascending: false }),
       supabase.from('eventos').select('*'),
       supabase.from('sugestoes').select('*').eq('estado', 'nova')
         .order('nota', { ascending: false }).order('publicado_em', { ascending: false }),
       supabase.from('perfil_busca').select('*').maybeSingle(),
+      supabase.from('modelos').select('*').order('created_at'),
     ])
     if (v.error || e.error || s.error || p.error) return setErro((v.error ?? e.error ?? s.error ?? p.error)!.message)
     setPerfil(p.data as PerfilBusca | null)
+    setModelos((m.data ?? []) as Modelo[])
     setVagas(v.data as Vaga[])
     setEventos(e.data as Evento[])
     setSugestoes(s.data as Sugestao[])
@@ -175,7 +179,8 @@ export default function App() {
 
       <main>
         {visao === 'sugestoes' ? (
-          <Sugestoes sugestoes={sugestoes} perfil={perfil ?? null} onEditarPerfil={() => setPainel('perfil')} onAplicar={s => salvarSugestao(s, true)} onSalvar={s => salvarSugestao(s, false)}
+          <Sugestoes sugestoes={sugestoes} perfil={perfil ?? null} modelos={modelos} onEditarPerfil={() => setPainel('perfil')}
+            onGerenciarModelos={() => setPainel('modelos')} onAplicar={s => salvarSugestao(s, true)} onSalvar={s => salvarSugestao(s, false)}
             onDescartar={s => marcarSugestao(s, 'descartada')} onRecarregar={carregar} />
         ) : !vagas.length ? (
           <div className="vazio">
@@ -190,6 +195,9 @@ export default function App() {
       {painel === 'perfil' && perfil && (
         <PerfilEditor perfil={perfil} onFechar={() => setPainel(null)} onSalvo={p => { setPerfil(p); setPainel(null) }} />
       )}
+      {painel === 'modelos' && (
+        <Modelos modelos={modelos} onMudou={setModelos} onFechar={() => setPainel(null)} />
+      )}
       {painel === 'conta' && (
         <Conta email={sessao.user.email ?? ''} admin={sessao.user.email === ADMIN} onFechar={() => setPainel(null)} />
       )}
@@ -199,6 +207,8 @@ export default function App() {
           key={aberta === 'nova' ? 'nova' : aberta.id}
           vaga={vagaAberta}
           eventos={eventos}
+          modelos={modelos}
+          onGerenciarModelos={() => setPainel('modelos')}
           onFechar={() => setAberta(null)}
           onSalvar={salvar}
           onExcluir={excluir}

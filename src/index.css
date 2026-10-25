@@ -240,3 +240,28 @@ a.btn { text-decoration: none; text-align: center; }
 .convites { list-style: none; margin: 0; padding: 0; display: grid; }
 .convites li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .convites .x { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 18px; }
+
+/* Kit de candidatura e modelos */
+.kit { grid-column: 1 / -1; display: grid; gap: 8px; background: var(--surface-2); border-radius: 10px; padding: 12px; }
+.vazio-kit { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.kit-topo { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.kit-topo select { width: auto; max-width: 70%; }
+.kit-texto { display: grid; gap: 8px; }
+.kit-texto textarea { font-size: 13px; line-height: 1.5; background: var(--surface); resize: vertical; }
+.kit-rodape { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.kit-rodape small { color: var(--muted); font-size: 11px; }
+.kit-habilidades { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.kit-habilidades small { color: var(--muted); }
+.chip-hab { border: 1px solid var(--accent); color: var(--accent); background: transparent; border-radius: 14px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.chip-hab:hover { background: var(--accent); color: #fff; }
+.painel-largo { width: min(560px, 100vw); }
+.modelos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.modelos li { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--border); border-radius: 10px; }
+.modelos li > div:first-child { display: grid; gap: 4px; min-width: 0; }
+.modelos small { color: var(--muted); font-size: 12px; }
+.tag-padrao { margin-left: 8px; font-size: 10px; text-transform: uppercase; background: var(--accent); color: #fff; border-radius: 6px; padding: 1px 6px; }
+.tres-hab { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tres-hab legend { font-size: 12px; color: var(--muted); margin-bottom: 4px; padding: 0; }
+.check { display: flex !important; align-items: center; gap: 8px; }
+.check input { width: auto; }
+@media (max-width: 720px) { .tres-hab { grid-template-columns: 1fr; } }

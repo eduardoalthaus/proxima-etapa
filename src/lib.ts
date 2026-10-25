@@ -120,3 +120,36 @@ export const hoje = () => new Date().toLocaleDateString('sv-SE')
 
 export const fmtData = (d: string) =>
   new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+
+export interface Modelo {
+  id: string
+  nome: string
+  palavras_chave: string[]
+  habilidades: string[]
+  texto: string
+  padrao: boolean
+}
+
+const normalizar = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+
+// Escolhe o modelo cujas palavras-chave mais aparecem no título da vaga.
+// Palavras mais longas pesam mais ("analista de sistemas" vence "sistemas").
+export function escolherModelo(modelos: Modelo[], titulo: string): Modelo | null {
+  if (!modelos.length) return null
+  const t = normalizar(titulo)
+  const pontos = (m: Modelo) => m.palavras_chave.reduce((s, p) => (p && t.includes(normalizar(p)) ? s + p.length : s), 0)
+  const melhor = [...modelos].sort((a, b) => pontos(b) - pontos(a) || Number(b.padrao) - Number(a.padrao))[0]
+  return pontos(melhor) > 0 ? melhor : modelos.find(m => m.padrao) ?? modelos[0]
+}
+
+// A Gupy usa o nome da página de carreiras, que às vezes vem com slogan
+// ("Viaflow | Work Smarter") ou é só uma frase; nesse caso fica o genérico "empresa".
+function nomeEmpresa(empresa: string | null | undefined) {
+  const nome = (empresa ?? '').split(/\s+[|–-]\s+|\s*\|\s*/)[0].trim()
+  return nome && nome.length <= 40 && !/[!?]/.test(nome) ? nome : 'empresa'
+}
+
+export const preencher = (texto: string, vaga: { empresa?: string | null; cargo?: string | null }) =>
+  texto
+    .replace(/%empresa%/gi, nomeEmpresa(vaga.empresa))
+    .replace(/%cargo%/gi, vaga.cargo?.split('|')[0].trim() || 'vaga')

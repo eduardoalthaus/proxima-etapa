@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import {
   STATUS, TIPOS, fmtData, hoje, statusInfo, tipoInfo,
-  type Evento, type TipoEvento, type Vaga,
+  type Evento, type Modelo, type TipoEvento, type Vaga,
 } from './lib'
+import Kit from './Kit'
 
 export type VagaNova = Omit<Vaga, 'id' | 'created_at' | 'updated_at'>
 
@@ -11,9 +12,11 @@ const VAZIA: VagaNova = {
   status: 'aplicado', prioridade: 2, data_aplicacao: hoje(), contato: '', notas: '',
 }
 
-export default function VagaPanel({ vaga, eventos, onFechar, onSalvar, onExcluir, onEvento, onExcluirEvento }: {
+export default function VagaPanel({ vaga, eventos, modelos, onGerenciarModelos, onFechar, onSalvar, onExcluir, onEvento, onExcluirEvento }: {
   vaga: Vaga | null // null = nova vaga
   eventos: Evento[]
+  modelos: Modelo[]
+  onGerenciarModelos: () => void
   onFechar: () => void
   onSalvar: (dados: VagaNova, id?: string) => Promise<void>
   onExcluir: (v: Vaga) => void
@@ -99,6 +102,13 @@ export default function VagaPanel({ vaga, eventos, onFechar, onSalvar, onExcluir
               <button className="btn" onClick={() => setEditando(true)}>✏️ Editar</button>
               <button className="btn perigo" onClick={() => confirm(`Excluir ${vaga.empresa}?`) && onExcluir(vaga)}>Excluir</button>
             </div>
+
+            {['interesse', 'aplicado'].includes(vaga.status) && (
+              <>
+                <h3>Texto de apresentação</h3>
+                <Kit modelos={modelos} empresa={vaga.empresa} cargo={vaga.cargo} onGerenciar={onGerenciarModelos} />
+              </>
+            )}
 
             <h3>Andamento</h3>
             <form onSubmit={addEvento} className="novo-evento">
