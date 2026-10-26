@@ -43,9 +43,16 @@ export default function Sugestoes({ sugestoes, perfil, modelos, onEditarPerfil, 
     setMsg(null)
     const { data, error } = await supabase.functions.invoke('buscar-vagas')
     setBuscando(false)
-    if (error) return setMsg('A busca falhou. Tente de novo em alguns minutos.')
+    if (error) {
+      const corpo = await (error as { context?: Response }).context?.json?.().catch(() => null)
+      return setMsg(corpo?.erro === 'aguarde'
+        ? 'Você acabou de buscar. Espere um minutinho e tente de novo.'
+        : 'A busca falhou. Tente de novo em alguns minutos.')
+    }
     const r = data?.resultados?.[0]
-    setMsg(r ? `${r.analisadas} vagas analisadas, ${r.aprovadas} passaram no filtro.` : 'Busca concluída.')
+    if (!r) setMsg('Busca concluída.')
+    else if (r.novas > 0) setMsg(`🎉 ${r.novas} vaga${r.novas > 1 ? 's' : ''} nova${r.novas > 1 ? 's' : ''} para você (${r.analisadas} analisadas).`)
+    else setMsg(`Nenhuma vaga nova desde a última busca (${r.analisadas} analisadas). As que você já aplicou ou descartou não voltam.`)
     await onRecarregar()
   }
 
@@ -78,7 +85,13 @@ export default function Sugestoes({ sugestoes, perfil, modelos, onEditarPerfil, 
       {!lista.length ? (
         <div className="vazio-sug">
           <p>Nenhuma sugestão nova{fonte !== 'todas' ? ` em ${fonte}` : ''}.</p>
-          <p className="muted">As vagas que você salva ou descarta saem desta lista.</p>
+          <p className="muted">
+            As fontes publicam vagas ao longo do dia. Para receber mais, amplie os cargos ou baixe a nota mínima no seu perfil.
+          </p>
+          <div className="acoes centro">
+            <button className="btn primary" onClick={buscarAgora} disabled={buscando}>{buscando ? 'Buscando…' : '🔎 Buscar agora'}</button>
+            <button className="btn" onClick={onEditarPerfil}>⚙️ Ampliar meu perfil</button>
+          </div>
         </div>
       ) : (
         <ul className="sug-lista">

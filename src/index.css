@@ -274,3 +274,5 @@ a.btn { text-decoration: none; text-align: center; }
 .email-topo { display: flex; justify-content: space-between; align-items: center; }
 .email-tipo { font-size: 12px; font-weight: 600; }
 .emails select { font-size: 12px; padding: 4px 8px; }
+
+.acoes.centro { justify-content: center; margin-top: 8px; }

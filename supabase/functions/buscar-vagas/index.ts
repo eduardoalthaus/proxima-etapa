@@ -16,6 +16,7 @@ type Perfil = {
   cidade: string | null
   estado: string | null
   abrangencia: 'cidade' | 'estado'
+  ultima_busca: string | null
 }
 
 type Vaga = {
@@ -33,6 +34,7 @@ type Vaga = {
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 const MAX_DIAS = 30
+const INTERVALO_MANUAL = 60_000 // só evita cliques repetidos
 
 // ---------- utilidades ----------
 
@@ -242,14 +244,25 @@ async function rodar(perfil: Perfil) {
     })
   }
 
-  await Promise.all(linhas.filter(l => l.fonte === 'Gupy').map(async l => { l.salario = await salarioGupy(l.url) }))
+  // Separa as vagas que o usuário nunca viu das que já estão em sugestoes (novas, salvas ou descartadas)
+  const { data: existentes } = await admin.from('sugestoes').select('fonte, externo_id').eq('user_id', perfil.user_id)
+  const jaVistas = new Set((existentes ?? []).map(e => `${e.fonte}|${e.externo_id}`))
+  const novas = linhas.filter(l => !jaVistas.has(`${l.fonte}|${l.externo_id}`))
+  const antigas = linhas.filter(l => jaVistas.has(`${l.fonte}|${l.externo_id}`))
 
-  // Atualiza os dados de sugestões já vistas sem tocar no estado (nova/salva/descartada)
-  const { error } = await admin.from('sugestoes')
-    .upsert(linhas, { onConflict: 'user_id,fonte,externo_id' })
+  // Só abre a página da Gupy (para achar o salário) das vagas novas
+  await Promise.all(novas.filter(l => l.fonte === 'Gupy').map(async l => { l.salario = await salarioGupy(l.url) }))
+
+  const { error } = await admin.from('sugestoes').insert(novas)
   if (error) throw error
+  // Nas já vistas, atualiza título, nota e motivos sem tocar no estado nem apagar o salário encontrado antes
+  if (antigas.length) {
+    const { error: e2 } = await admin.from('sugestoes')
+      .upsert(antigas.map(({ salario: _, ...resto }) => resto), { onConflict: 'user_id,fonte,externo_id' })
+    if (e2) throw e2
+  }
   await admin.from('perfil_busca').update({ ultima_busca: new Date().toISOString() }).eq('user_id', perfil.user_id)
-  return { analisadas: todas.length, aprovadas: linhas.length }
+  return { analisadas: todas.length, aprovadas: linhas.length, novas: novas.length }
 }
 
 const cors = {
@@ -279,6 +292,13 @@ Deno.serve(async req => {
     if (filtro) q = q.eq('user_id', filtro)
     const { data: perfis, error } = await q
     if (error) throw error
+
+    // Busca manual: ignora cliques repetidos em menos de um minuto
+    const p0 = (perfis as Perfil[])[0]
+    if (filtro && p0?.ultima_busca) {
+      const falta = INTERVALO_MANUAL - (Date.now() - new Date(p0.ultima_busca).getTime())
+      if (falta > 0) return json({ erro: 'aguarde', esperaMin: Math.ceil(falta / 60_000) }, 429)
+    }
 
     const resultados = []
     for (const p of perfis as Perfil[]) resultados.push(await rodar(p))
