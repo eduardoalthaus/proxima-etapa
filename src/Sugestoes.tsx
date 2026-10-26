@@ -66,7 +66,7 @@ export default function Sugestoes({ sugestoes, perfil, modelos, onEditarPerfil, 
         <div>
           <h2>Vagas para o seu perfil</h2>
           <p className="muted">
-            Busca diária às 7h · {descreverBusca(perfil)}
+            Busca automática às 0h e 12h · {descreverBusca(perfil)}
             {perfil?.ultima_busca && <> · última: {new Date(perfil.ultima_busca).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</>}
           </p>
         </div>

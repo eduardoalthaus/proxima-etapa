@@ -24,7 +24,7 @@ O histórico de schema está em `supabase/migrations/`.
 - `outlook`: OAuth com a Microsoft (app registrado no Entra do Eduardo, que aceita contas pessoais), lê e-mails da Gupy via Graph (`$search="from:gupy"`),
   classifica (recusa, oferta, entrevista, teste, candidatura, avanço) com regras feitas a partir de assuntos reais e move a vaga de etapa.
 - As duas usam `verify_jwt = false` e fazem a própria autenticação: JWT do usuário **ou** header `x-cron-segredo` (valor em `config_privada`).
-- Agendamentos (pg_cron): `buscar-vagas-diario` às 10h UTC (7h de Brasília) e `ler-outlook-horario` no minuto 20 de cada hora.
+- Agendamentos (pg_cron): `buscar-vagas-12h` às 3h e 15h UTC (0h e 12h de Brasília) e `ler-outlook-horario` no minuto 20 de cada hora.
 - Secrets das funções (`MS_CLIENT_ID`, `MS_CLIENT_SECRET`) ficam no painel do Supabase. **Nunca** escrever segredos no código, em arquivos ou no chat.
 
 ## Regras de negócio que não estão óbvias no código
