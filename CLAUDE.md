@@ -19,7 +19,9 @@ O histórico de schema está em `supabase/migrations/`.
 
 ## Edge Functions (`supabase/functions/`)
 
-- `buscar-vagas`: busca na Gupy (endpoint público **não oficial** do portal, `portal.gupy.io/api/job-search/jobs`) e em Remotive, Himalayas, Jobicy e RemoteOK;
+- `buscar-vagas`: busca na Gupy e na Sólides (endpoints públicos **não oficiais** dos portais, `portal.gupy.io/api/job-search/jobs` e
+  `vagas.solides.com.br/api/vacancies`, máx. 20 por página), na Remotar (`api.remotar.com.br`), em repositórios de vagas do GitHub
+  (backend-br, frontendbr…; leitura guardada 15 min, token opcional `GITHUB_TOKEN`) e, para quem tem inglês, em Remotive, Himalayas, Jobicy e RemoteOK;
   pontua cada vaga contra `perfil_busca` (cargo no título +45, competências +4 até 30, nível, local) e grava em `sugestoes`.
 - `outlook`: OAuth com a Microsoft (app registrado no Entra do Eduardo, que aceita contas pessoais), lê e-mails da Gupy via Graph (`$search="from:gupy"`),
   classifica (recusa, oferta, entrevista, teste, candidatura, avanço) com regras feitas a partir de assuntos reais e move a vaga de etapa.

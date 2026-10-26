@@ -8,9 +8,9 @@ function descreverBusca(p: PerfilBusca | null) {
   if (!p) return ''
   const lugar = p.abrangencia === 'estado' ? p.estado : [p.cidade, p.estado].filter(Boolean).join('/')
   const partes = p.modalidades.map(m => m === 'remoto' ? 'remoto' : `${m === 'hibrido' ? 'híbrido' : 'presencial'} em ${lugar}`)
-  const fontes = p.modalidades.includes('remoto') && p.termos_global.length
-    ? 'Gupy, Remotive, Himalayas, Jobicy e RemoteOK' : 'Gupy'
-  return `${partes.join(', ')} · ${fontes}`
+  const fontes = ['Gupy', 'Sólides', 'Remotar', 'GitHub']
+  if (p.modalidades.includes('remoto') && p.termos_global.length) fontes.push('Remotive', 'Himalayas', 'Jobicy', 'RemoteOK')
+  return `${partes.join(', ')} · ${fontes.length} fontes`
 }
 
 function haQuanto(d: string | null) {

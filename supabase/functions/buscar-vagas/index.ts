@@ -12,7 +12,7 @@ type Perfil = {
   excluir: string[]
   nota_minima: number
   nivel: 'junior' | 'pleno' | 'senior'
-  modalidades: ('remoto' | 'hibrido' | 'presencial')[]
+  modalidades: Modalidade[]
   cidade: string | null
   estado: string | null
   abrangencia: 'cidade' | 'estado'
@@ -30,7 +30,10 @@ type Vaga = {
   publicado_em: string | null
   salario: string | null
   global: boolean // fonte internacional: precisa checar restrição de país
+  modalidade?: Modalidade // fontes brasileiras que misturam remoto, híbrido e presencial
 }
+
+type Modalidade = 'remoto' | 'hibrido' | 'presencial'
 
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 const MAX_DIAS = 30
@@ -97,6 +100,14 @@ async function getJson(url: string): Promise<any> {
 
 // ---------- fontes ----------
 
+const UF: Record<string, string> = {
+  'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM', 'Bahia': 'BA', 'Ceará': 'CE', 'Distrito Federal': 'DF',
+  'Espírito Santo': 'ES', 'Goiás': 'GO', 'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS', 'Minas Gerais': 'MG',
+  'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR', 'Pernambuco': 'PE', 'Piauí': 'PI', 'Rio de Janeiro': 'RJ',
+  'Rio Grande do Norte': 'RN', 'Rio Grande do Sul': 'RS', 'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC',
+  'São Paulo': 'SP', 'Sergipe': 'SE', 'Tocantins': 'TO',
+}
+
 const TIPO_GUPY = { remoto: 'remote', hibrido: 'hybrid', presencial: 'on-site' } as const
 const ROTULO: Record<string, string> = { remote: 'Remoto', hybrid: 'Híbrido', 'on-site': 'Presencial' }
 
@@ -116,6 +127,96 @@ async function gupy(p: Perfil): Promise<Vaga[]> {
     local: j.workplaceType === 'remote' ? 'Brasil (remoto)' : `${ROTULO[j.workplaceType] ?? 'Presencial'} · ${[j.city, j.state].filter(Boolean).join('/')}`,
     descricao: j.description ?? '', publicado_em: iso(j.publishedDate), salario: null, global: false,
   })))
+}
+
+// Sólides: busca pública do portal vagas.solides.com.br (não oficial, como a da Gupy). Máximo de 20 por página.
+async function solides(p: Perfil): Promise<Vaga[]> {
+  const uf = UF[p.estado ?? '']
+  const urls = p.termos_br.flatMap(t => p.modalidades.flatMap(m => {
+    let local = ''
+    if (m !== 'remoto') {
+      if (!uf) return []
+      local = p.abrangencia === 'cidade' && p.cidade ? `${p.cidade} - ${uf}` : uf
+    }
+    return [1, 2].map(pagina => 'https://vagas.solides.com.br/api/vacancies?' +
+      new URLSearchParams({ page: String(pagina), take: '20', title: t, locations: local, jobsType: m }))
+  }))
+  const res = await Promise.all(urls.map(getJson))
+  return res.flatMap(r => (r?.data ?? []).map((j: any): Vaga => ({
+    fonte: 'Sólides', externo_id: String(j.id), titulo: j.title, empresa: j.companyName,
+    url: `https://${j.slug}.vagas.solides.com.br/vaga/${j.id}`,
+    local: j.jobType === 'remoto' ? 'Brasil (remoto)'
+      : `${j.jobType === 'hibrido' ? 'Híbrido' : 'Presencial'} · ${[j.city?.name, j.state?.code].filter(Boolean).join('/')}`,
+    descricao: j.description ?? '', publicado_em: iso(j.createdAt),
+    salario: faixa(j.salary?.initialRange, j.salary?.finalRange, 'BRL', 'month'), global: false,
+    modalidade: j.jobType === 'hibrido' ? 'hibrido' : j.jobType === 'presencial' ? 'presencial' : 'remoto',
+  })))
+}
+
+// Remotar: agregador brasileiro de vagas remotas, com API aberta
+async function remotar(termos: string[]): Promise<Vaga[]> {
+  const res = await Promise.all(termos.map(t => getJson(`https://api.remotar.com.br/jobs?search=${encodeURIComponent(t)}&page=1`)))
+  return res.flatMap(r => (r?.data ?? []).map((j: any): Vaga => ({
+    fonte: 'Remotar', externo_id: String(j.id), titulo: j.title, empresa: j.companyDisplayName ?? j.company?.name ?? null,
+    url: `https://remotar.com.br/job/${j.id}`,
+    local: j.type === 'remote' ? 'Brasil (remoto)' : `Híbrido · ${[j.city, j.state].filter(Boolean).join('/')}`,
+    descricao: `${j.subtitle ?? ''} ${j.description ?? ''}`, publicado_em: iso(j.createdAt),
+    // A Remotar manda o salário em centavos
+    salario: faixa(Number(j.jobSalary?.from) / 100, Number(j.jobSalary?.to) / 100, j.jobSalary?.currency ?? 'BRL', 'month'), global: false,
+    modalidade: j.type === 'remote' ? 'remoto' : 'hibrido',
+  })))
+}
+
+// Repositórios da comunidade dev brasileira em que as vagas são issues. São iguais para todos os usuários,
+// então a leitura é guardada por alguns minutos (o GitHub sem token permite 60 chamadas por hora por IP).
+const REPOS_GITHUB = [
+  'backend-br/vagas', 'frontendbr/vagas', 'qa-brasil/vagas', 'react-brasil/vagas',
+  'dotnetdevbr/vagas', 'phpdevbr/vagas', 'androiddevbr/vagas', 'vuejs-br/vagas',
+]
+let cacheGithub: { em: number; vagas: Promise<Vaga[]> } | null = null
+
+function github(): Promise<Vaga[]> {
+  if (cacheGithub && Date.now() - cacheGithub.em < 15 * 60_000) return cacheGithub.vagas
+  const token = Deno.env.get('GITHUB_TOKEN')
+  const vagas = Promise.all(REPOS_GITHUB.map(async repo => {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${repo}/issues?state=open&per_page=100`, {
+        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'vagas-remotas', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        signal: AbortSignal.timeout(20_000),
+      })
+      if (!r.ok) return []
+      return ((await r.json()) as any[]).filter(i => !i.pull_request).map((i): Vaga => {
+        const etiquetas = semAcento(i.labels.map((l: any) => l.name).join(' '))
+        const titulo = semAcento(i.title)
+        const modalidade: Modalidade = /remot/.test(`${etiquetas} ${titulo}`) ? 'remoto'
+          : /hibrid/.test(`${etiquetas} ${titulo}`) ? 'hibrido' : 'presencial'
+        // Títulos seguem "[Local] Cargo na/@ Empresa"
+        const local = i.title.match(/^\s*\[([^\]]+)\]/)?.[1] ?? ''
+        const empresa = i.title.replace(/^\s*\[[^\]]*\]\s*/, '').match(/\s(?:na|no|at|@)\s+(.+)$/i)?.[1]?.trim() ?? repo.split('/')[0]
+        return {
+          fonte: 'GitHub', externo_id: `${repo}#${i.number}`, titulo: i.title.replace(/^\s*\[[^\]]*\]\s*/, ''), empresa,
+          url: i.html_url, local: modalidade === 'remoto' ? 'Brasil (remoto)' : `${modalidade === 'hibrido' ? 'Híbrido' : 'Presencial'} · ${local}`,
+          descricao: `${i.labels.map((l: any) => l.name).join(', ')} ${i.body ?? ''}`, publicado_em: iso(i.created_at),
+          salario: null, global: false, modalidade,
+        }
+      })
+    } catch {
+      return []
+    }
+  })).then(listas => listas.flat())
+  cacheGithub = { em: Date.now(), vagas }
+  return vagas
+}
+
+// Fontes que misturam modalidades: só passa o que o perfil aceita, e o que não é remoto precisa ser no lugar escolhido
+function combinaLocal(v: Vaga, p: Perfil): boolean {
+  if (!v.modalidade) return true
+  if (!p.modalidades.includes(v.modalidade)) return false
+  if (v.modalidade === 'remoto') return true
+  const local = semAcento(v.local ?? '')
+  const uf = UF[p.estado ?? '']?.toLowerCase()
+  if (p.abrangencia === 'cidade' && p.cidade) return local.includes(semAcento(p.cidade))
+  return !!p.estado && (local.includes(semAcento(p.estado)) || (!!uf && new RegExp(`(^|[^a-z])${uf}([^a-z]|$)`).test(local)))
 }
 
 async function remotive(termos: string[]): Promise<Vaga[]> {
@@ -206,6 +307,30 @@ function pontuar(v: Vaga, p: Perfil): { nota: number; motivos: string[] } | null
   return { nota: Math.max(0, Math.min(100, nota)), motivos }
 }
 
+// ---------- vagas repetidas entre fontes ----------
+
+// A Remotar (e às vezes a Sólides) republica vagas da Gupy com título e nome de empresa um pouco diferentes:
+// "Montreal | Tecnologia e Inovação" x "Montreal Oficial", "Pessoa Analista X | Área" x "Pessoa Analista X".
+type Assinatura = { titulo: string; empresa: string; nucleo: string }
+const GENERICAS = new Set(['pessoa', 'empresa', 'grupo', 'the', 'com', 'ltda', 'oficial', 'vagas', 'tech', 'conecte'])
+
+function assinatura(titulo: string, empresa: string | null): Assinatura {
+  const e = semAcento(empresa ?? '').replace(/[^a-z0-9]+/g, ' ').trim()
+  return {
+    titulo: semAcento(titulo.replace(/^\s*\d{4,}\s*[-–|]\s*/, '').split('|')[0]).replace(/[^a-z0-9]+/g, ' ').trim(),
+    empresa: e,
+    nucleo: e.split(' ').find(w => w.length >= 3 && !GENERICAS.has(w)) ?? '',
+  }
+}
+
+function mesmaVaga(a: Assinatura, b: Assinatura) {
+  const titulo = a.titulo === b.titulo || (a.titulo.length > 15 && b.titulo.length > 15 &&
+    (a.titulo.startsWith(b.titulo) || b.titulo.startsWith(a.titulo)))
+  if (!titulo) return false
+  if (!a.nucleo || !b.nucleo) return a.empresa === b.empresa
+  return a.nucleo === b.nucleo || b.empresa.includes(a.nucleo) || a.empresa.includes(b.nucleo)
+}
+
 // ---------- execução ----------
 
 async function rodar(perfil: Perfil) {
@@ -213,6 +338,9 @@ async function rodar(perfil: Perfil) {
   const internacional = perfil.modalidades.includes('remoto') && perfil.termos_global.length > 0
   const [br, ...globais] = await Promise.all([
     gupy(perfil),
+    solides(perfil),
+    perfil.modalidades.includes('remoto') || perfil.modalidades.includes('hibrido') ? remotar(perfil.termos_br) : [],
+    github(),
     ...(internacional ? [
       remotive(perfil.termos_global),
       himalayas(perfil.termos_global),
@@ -222,16 +350,28 @@ async function rodar(perfil: Perfil) {
   ])
   const todas = [br, ...globais].flat()
 
+  // Tudo o que o usuário já viu (sugestões em qualquer estado e vagas do mapa), para não sugerir de novo pela outra fonte
+  const [{ data: existentes }, { data: doMapa }] = await Promise.all([
+    admin.from('sugestoes').select('fonte, externo_id, titulo, empresa').eq('user_id', perfil.user_id),
+    admin.from('vagas').select('cargo, empresa').eq('user_id', perfil.user_id),
+  ])
+  const jaVistas = new Set((existentes ?? []).map(e => `${e.fonte}|${e.externo_id}`))
+  const conhecidas = [
+    ...(existentes ?? []).map(e => assinatura(e.titulo, e.empresa)),
+    ...(doMapa ?? []).map(v => assinatura(v.cargo, v.empresa)),
+  ]
+
   const limite = Date.now() - MAX_DIAS * 86_400_000
-  const vistas = new Set<string>()
+  const vistas: Assinatura[] = []
   const linhas = []
   for (const v of todas) {
-    if (!v.titulo || !v.url) continue
+    if (!v.titulo || !v.url || !combinaLocal(v, perfil)) continue
     if (v.publicado_em && new Date(v.publicado_em).getTime() < limite) continue
-    // A mesma vaga costuma aparecer em várias buscas e fontes
-    const chave = semAcento(`${v.titulo}|${v.empresa ?? ''}`)
-    if (vistas.has(chave)) continue
-    vistas.add(chave)
+    // A mesma vaga aparece em várias buscas e fontes; a que já existe em sugestoes segue o caminho normal (atualiza)
+    const a = assinatura(v.titulo, v.empresa)
+    if (vistas.some(b => mesmaVaga(a, b))) continue
+    if (!jaVistas.has(`${v.fonte}|${v.externo_id}`) && conhecidas.some(b => mesmaVaga(a, b))) continue
+    vistas.push(a)
 
     const r = pontuar(v, perfil)
     if (!r || r.nota < perfil.nota_minima) continue
@@ -245,8 +385,6 @@ async function rodar(perfil: Perfil) {
   }
 
   // Separa as vagas que o usuário nunca viu das que já estão em sugestoes (novas, salvas ou descartadas)
-  const { data: existentes } = await admin.from('sugestoes').select('fonte, externo_id').eq('user_id', perfil.user_id)
-  const jaVistas = new Set((existentes ?? []).map(e => `${e.fonte}|${e.externo_id}`))
   const novas = linhas.filter(l => !jaVistas.has(`${l.fonte}|${l.externo_id}`))
   const antigas = linhas.filter(l => jaVistas.has(`${l.fonte}|${l.externo_id}`))
 

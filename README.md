@@ -33,7 +33,8 @@ Vagas aguardando resposta há 7+ dias ganham o aviso ⏳.
 ## Sugestões de vagas
 
 A Edge Function `buscar-vagas` (em `supabase/functions/`) roda às 0h e 12h (Brasília) via `pg_cron` e também pelo botão "Buscar agora".
-Ela consulta Gupy (remoto, Brasil), Remotive, Himalayas, Jobicy e RemoteOK, descarta vagas restritas a outros países,
+Ela consulta Gupy e Sólides (remoto, híbrido e presencial no Brasil), Remotar, repositórios de vagas do GitHub e,
+para perfis com inglês, Remotive, Himalayas, Jobicy e RemoteOK. Descarta vagas restritas a outros países,
 mais velhas que 30 dias ou com termos excluídos no título, e dá uma nota de 0 a 100:
 
 - cargo de interesse no título: +45 (só na descrição: +5)
