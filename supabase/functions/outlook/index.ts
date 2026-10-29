@@ -68,11 +68,11 @@ async function callback(url: URL) {
 // A ordem importa: uma recusa costuma mencionar "etapa", um convite de entrevista pode citar "teste"
 const REGRAS: [Tipo, RegExp][] = [
   // "Obrigada pelo interesse em fazer parte do nosso time!" é o assunto padrão de recusa da Gupy
-  ['recusa', /nao (seguiremos|vamos seguir|avancou|avancara|foi selecionad|prosseguir|daremos continuidade)|infelizmente|processo (foi )?(encerrad|finalizad|cancelad)|outr[oa]s? (candidat|perfi)|reprovad|nao foi possivel seguir|obrigad[oa] pelo interesse|agradecemos (a )?sua participacao|vaga (foi )?descontinuada|seguiremos em conexao/],
+  ['recusa', /nao (seguiremos|vamos seguir|avancou|avancara|foi selecionad|prosseguir|daremos continuidade)|infelizmente|processo (foi )?(encerrad|finalizad|cancelad)|outr[oa]s? (candidat|perfi)|reprovad|nao foi possivel seguir|(obrigad[oa]|agradecemos) pelo interesse|agradecemos (a )?sua participacao|optamos por (dar andamento|seguir|prosseguir) com outr|vaga (foi )?descontinuada|seguiremos em conexao/],
   ['oferta', /proposta|carta oferta|voce foi aprovad|foi contratad|bem[- ]vind[oa] ao time|parabens.{0,40}aprovad/],
   ['entrevista', /entrevista|bate[- ]papo|conversa com (o|a) (gestor|lider|time|rh)/],
-  ['teste', /teste|desafio|case tecnico|avaliacao|fit cultural|prova |mapeamento comportamental|etapa (de )?video|concluir etapa/],
-  ['candidatura', /candidatura (foi )?(realizada|recebida|enviada|confirmada|concluida)|inscricao (foi )?(realizada|confirmada|concluida)|obrigad[oa] por se (candidatar|inscrever)/],
+  ['teste', /teste|desafio|case tecnico|avaliacao|fit cultural|prova |mapeamento comportamental|etapa (de )?video|concluir etapa|etapa .{0,60}desbloqueada|etapa desbloqueada foi/],
+  ['candidatura', /confirmacao de candidatura|recebemos (a )?sua candidatura|candidatura (foi )?(realizada|recebida|enviada|confirmada|concluida)|inscricao (foi )?(realizada|confirmada|concluida)|obrigad[oa] por se (candidatar|inscrever)/],
   ['avanco', /avancou|proxima etapa|nova etapa|mudou de etapa|segue no processo|continua no processo/],
 ]
 
@@ -101,9 +101,12 @@ function pistasDoLink(link: string | null) {
 }
 
 const PALAVRAS_VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'para', 'com', 'pessoa', 'vaga', 'remoto', 'home', 'office'])
+const EMPRESA_GENERICA = new Set(['grupo', 'group', 'empresa', 'oficial', 'tecnologia', 'conecte', 'pessoa', 'the', 'ltda'])
+const limpo = (s: string) => ` ${norm(s).replace(/[^a-z0-9]+/g, ' ').trim()} `
 
 function associar(texto: string, vagas: Vaga[]): Vaga | null {
   const t = norm(texto)
+  const tl = limpo(texto)
   let melhor: Vaga | null = null
   let maior = 0
   for (const v of vagas) {
@@ -111,14 +114,19 @@ function associar(texto: string, vagas: Vaga[]): Vaga | null {
     const { sub, jobId } = pistasDoLink(v.link)
     if (jobId && t.includes(jobId)) pontos += 40
     if (sub && t.includes(`${sub}.gupy.io`)) pontos += 20
-    const empresa = norm(v.empresa.split(/\s+[|–-]\s+|\s*\|\s*/)[0]).trim()
-    if (empresa.length >= 3 && t.includes(empresa)) pontos += 15
+    const empresa = limpo(v.empresa.split(/\s+[|–-]\s+|\s*\|\s*/)[0])
+    const nucleo = empresa.trim().split(' ').find(p => p.length >= 3 && !EMPRESA_GENERICA.has(p))
+    if (empresa.trim().length >= 3 && tl.includes(empresa)) pontos += 15
+    else if (nucleo && tl.includes(` ${nucleo} `)) pontos += 15
+    // Só associa com alguma pista forte (id da vaga, subdomínio ou empresa); o cargo só desempata
+    if (pontos === 0) continue
+    const cargo = limpo(v.cargo.split('|')[0])
+    if (cargo.trim().length > 8 && tl.includes(cargo)) pontos += 10
     const palavras = norm(v.cargo).split(/[^a-z0-9]+/).filter(p => p.length > 2 && !PALAVRAS_VAZIAS.has(p))
     if (palavras.length) pontos += 10 * (palavras.filter(p => t.includes(p)).length / palavras.length)
     if (pontos > maior) { maior = pontos; melhor = v }
   }
-  // Só associa com alguma pista forte (empresa, subdomínio ou id da vaga), não só pelo cargo
-  return maior >= 15 ? melhor : null
+  return melhor
 }
 
 // ---------- efeito na vaga ----------
