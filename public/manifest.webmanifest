@@ -1,6 +1,6 @@
 {
-  "name": "Próxima Etapa",
-  "short_name": "Próxima Etapa",
+  "name": "Radar de Vagas",
+  "short_name": "Radar",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#12141b",

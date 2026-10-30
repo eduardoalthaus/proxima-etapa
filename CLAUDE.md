@@ -1,16 +1,16 @@
-# Próxima Etapa
+# Radar de Vagas
 
 Tracker de candidaturas a vagas de emprego (qualquer área e modalidade), em português. Começou como app pessoal do Eduardo e hoje aceita outras pessoas **por convite**.
-Chamava-se "Vagas Remotas"; o nome mudou porque o app busca vagas de todo tipo ("Radar de Vagas" foi descartado: já existe outro app com esse nome).
-Site: https://proxima-etapa.vercel.app (o antigo vagas-remotas.vercel.app continua apontando para o mesmo projeto) ·
-Repo: github.com/eduardoalthaus/proxima-etapa (público, licença MIT).
+Chamava-se "Vagas Remotas"; o nome mudou porque o app busca vagas de todo tipo. O nome é escolha do Eduardo: **Radar de Vagas**, em todo lugar.
+Site: https://radardevagas.vercel.app (radar-de-vagas.vercel.app pertence a outro app; vagas-remotas.vercel.app continua apontando para este projeto) ·
+Repo: github.com/eduardoalthaus/radar-de-vagas (público, licença MIT). Projeto no Supabase também se chama `radar-de-vagas`.
 
 ## Arquitetura
 
 - **Frontend**: Vite + React + TypeScript (`src/`), sem roteador nem lib de estado. Mapa mental com `@xyflow/react`.
   Telas: Mapa, Kanban e Sugestões (alternadas em `App.tsx`), painéis laterais para vaga, perfil, modelos e conta.
 - **Supabase** (id `uplzlegibigvnaftrcfr`, região sa-east-1, plano gratuito): Postgres + Auth + Edge Functions + pg_cron/pg_net.
-- **Vercel** (projeto `proxima-etapa`, time `eduardo-althaus-projects`, plano Hobby) hospeda o build estático. O deploy automático pelo GitHub **não** está ligado.
+- **Vercel** (projeto `radar-de-vagas`, time `eduardo-althaus-projects`, plano Hobby) hospeda o build estático. O deploy automático pelo GitHub **não** está ligado.
 
 ## Tabelas (todas com RLS por `user_id = auth.uid()`)
 

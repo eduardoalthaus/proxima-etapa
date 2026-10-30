@@ -164,7 +164,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="topo">
-        <div className="marca">🎯 <span>Próxima Etapa</span></div>
+        <div className="marca">📡 <span>Radar de Vagas</span></div>
         <div className="stats">
           <div><b>{enviadas}</b><small>enviadas</small></div>
           <div><b>{enviadas ? Math.round((comResposta / enviadas) * 100) : 0}%</b><small>responderam</small></div>

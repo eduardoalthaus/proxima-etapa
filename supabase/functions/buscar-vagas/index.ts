@@ -74,7 +74,7 @@ function faixa(min: unknown, max: unknown, moeda?: string | null, periodo?: stri
 // Algumas empresas da Gupy colocam a remuneração no texto da vaga
 async function salarioGupy(url: string): Promise<string | null> {
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (proxima-etapa)' }, signal: AbortSignal.timeout(15_000) })
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (radar-de-vagas)' }, signal: AbortSignal.timeout(15_000) })
     if (!r.ok) return null
     const html = await r.text()
     const dados = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)?.[1]
@@ -91,7 +91,7 @@ async function salarioGupy(url: string): Promise<string | null> {
 
 async function getJson(url: string): Promise<any> {
   try {
-    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (proxima-etapa)' }, signal: AbortSignal.timeout(20_000) })
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (radar-de-vagas)' }, signal: AbortSignal.timeout(20_000) })
     return r.ok ? await r.json() : null
   } catch {
     return null
@@ -181,7 +181,7 @@ function github(): Promise<Vaga[]> {
   const vagas = Promise.all(REPOS_GITHUB.map(async repo => {
     try {
       const r = await fetch(`https://api.github.com/repos/${repo}/issues?state=open&per_page=100`, {
-        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'proxima-etapa', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'radar-de-vagas', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         signal: AbortSignal.timeout(20_000),
       })
       if (!r.ok) return []

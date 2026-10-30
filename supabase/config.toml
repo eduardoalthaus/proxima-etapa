@@ -1,5 +1,5 @@
 # Usado pela CLI do Supabase (supabase link / db push / functions deploy)
-project_id = "proxima-etapa"
+project_id = "radar-de-vagas"
 
 # As duas funções fazem a própria autenticação: JWT do usuário ou header x-cron-segredo
 [functions.buscar-vagas]
