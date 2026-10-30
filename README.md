@@ -6,8 +6,10 @@ acompanha cada candidatura num mapa e num kanban, e lê os e-mails dos processos
 Nasceu para resolver um problema meu: acompanhar dezenas de candidaturas em portais diferentes, cada uma numa etapa.
 Hoje funciona para qualquer área (TI, saúde, comercial, indústria, administrativo…) e aceita outras pessoas por convite.
 
-**[▶ Ver a demonstração](https://radardevagas.vercel.app/?demo)** · **[Case em PDF](docs/case.pdf)**: sem login, com dados fictícios. Dá para aplicar em vagas, mover cards
+**[▶ Ver a demonstração](https://radardevagas.vercel.app/?demo)**: sem login, com dados fictícios. Dá para aplicar em vagas, mover cards
 e anotar à vontade; ao sair ou recarregar a página, tudo volta ao início.
+
+📄 **[Case em PDF](docs/case.pdf)**: o problema, a solução e os números em 5 páginas.
 
 ![Mapa de candidaturas](docs/mapa.png)
 
