@@ -59,10 +59,10 @@ export default function Modelos({ modelos, onMudou, onFechar }: {
         {editando ? (
           <form onSubmit={salvar} className="form">
             <h2>{editando.id ? 'Editar modelo' : 'Novo modelo'}</h2>
-            <label>Nome<input required placeholder="Ex.: Analista de Sistemas" value={editando.nome}
+            <label>Nome<input required placeholder="Ex.: Atendimento ao cliente" value={editando.nome}
               onChange={e => setEditando({ ...editando, nome: e.target.value })} /></label>
             <label>Usar quando o título da vaga tiver
-              <input placeholder="analista de sistemas, erp, suporte" value={chaves} onChange={e => setChaves(e.target.value)} />
+              <input placeholder="atendimento, sac, customer success" value={chaves} onChange={e => setChaves(e.target.value)} />
               <small>Palavras separadas por vírgula. O app escolhe o modelo que mais combina com o título.</small>
             </label>
             <fieldset className="tres-hab">

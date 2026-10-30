@@ -1,0 +1,9 @@
+# Usado pela CLI do Supabase (supabase link / db push / functions deploy)
+project_id = "vagas-remotas"
+
+# As duas funções fazem a própria autenticação: JWT do usuário ou header x-cron-segredo
+[functions.buscar-vagas]
+verify_jwt = false
+
+[functions.outlook]
+verify_jwt = false

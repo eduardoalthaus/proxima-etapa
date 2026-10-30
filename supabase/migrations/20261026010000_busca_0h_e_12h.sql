@@ -1,3 +1,4 @@
+-- A URL fixa foi trocada por public.chamar_funcao em 20261030000000_instalacao_portatil.
 -- Busca automática às 0h e 12h de Brasília (3h e 15h UTC), no lugar da diária das 7h
 select cron.unschedule('buscar-vagas-diario');
 select cron.schedule(
@@ -5,7 +6,7 @@ select cron.schedule(
   '0 3,15 * * *',
   $$
   select net.http_post(
-    url := 'https://uplzlegibigvnaftrcfr.supabase.co/functions/v1/buscar-vagas',
+    url := 'https://SEU-PROJETO.supabase.co/functions/v1/buscar-vagas',
     headers := jsonb_build_object('Content-Type', 'application/json',
       'x-cron-segredo', (select valor from public.config_privada where chave = 'cron_segredo')),
     body := '{}'::jsonb,

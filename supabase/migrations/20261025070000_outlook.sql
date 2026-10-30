@@ -47,13 +47,13 @@ create policy "dono atualiza emails" on public.emails_recebidos for update to au
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 create policy "dono apaga emails" on public.emails_recebidos for delete to authenticated using ((select auth.uid()) = user_id);
 
--- Lê os e-mails da Gupy de hora em hora (minuto 20)
+-- Lê os e-mails da Gupy de hora em hora (minuto 20). A URL fixa foi trocada por public.chamar_funcao em 20261030000000_instalacao_portatil.
 select cron.schedule(
   'ler-outlook-horario',
   '20 * * * *',
   $$
   select net.http_post(
-    url := 'https://uplzlegibigvnaftrcfr.supabase.co/functions/v1/outlook',
+    url := 'https://SEU-PROJETO.supabase.co/functions/v1/outlook',
     headers := jsonb_build_object('Content-Type', 'application/json',
       'x-cron-segredo', (select valor from public.config_privada where chave = 'cron_segredo')),
     body := '{"acao":"ler"}'::jsonb,

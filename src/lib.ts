@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
+import { criarDemonstracao } from './demonstracao'
 
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY,
-)
+// Modo demonstração: ?demo na URL, ou sempre que a instalação ainda não tem Supabase configurado
+export const DEMO = new URLSearchParams(location.search).has('demo') || !import.meta.env.VITE_SUPABASE_URL
+
+export const supabase = DEMO
+  ? criarDemonstracao()
+  : createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY)
 
 export type Status =
   | 'interesse' | 'aplicado' | 'em_analise' | 'entrevista'

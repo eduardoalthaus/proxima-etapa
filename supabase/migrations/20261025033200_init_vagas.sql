@@ -1,4 +1,4 @@
--- Aplicada no projeto Supabase "vagas-remotas" (uplzlegibigvnaftrcfr)
+-- O e-mail do admin aqui era fixo; desde 20261030000000_instalacao_portatil ele fica em config_privada.
 
 -- Só o dono pode criar conta
 create or replace function public.somente_dono()

@@ -8,7 +8,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 const CLIENT_ID = Deno.env.get('MS_CLIENT_ID') ?? ''
 const CLIENT_SECRET = Deno.env.get('MS_CLIENT_SECRET') ?? ''
-const SITE = 'https://vagas-remotas.vercel.app'
+// Para onde voltar se o clique em "Conectar" não informou o site (instalações sem o front atualizado)
+const SITE = Deno.env.get('SITE_URL') ?? ''
 const REDIRECT = `${Deno.env.get('SUPABASE_URL')}/functions/v1/outlook/callback`
 const LOGIN = 'https://login.microsoftonline.com/common/oauth2/v2.0'
 const GRAPH = 'https://graph.microsoft.com/v1.0'
@@ -42,11 +43,24 @@ async function graph(url: string, acesso: string) {
   return r.json()
 }
 
+// Só aceita um endereço http(s) e guarda apenas a origem, sem caminho
+function origem(v: unknown): string | null {
+  try {
+    const u = new URL(String(v))
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.origin : null
+  } catch {
+    return null
+  }
+}
+
 async function callback(url: URL) {
-  const volta = (r: string) => Response.redirect(`${SITE}/?outlook=${r}`, 302)
   const estado = url.searchParams.get('state') ?? ''
   const code = url.searchParams.get('code')
   const { data: e } = await admin.from('oauth_estados').delete().eq('estado', estado).select().maybeSingle()
+  const site = e?.volta ?? SITE
+  const volta = (r: string) => site
+    ? Response.redirect(`${site}/?outlook=${r}`, 302)
+    : new Response(r === 'ok' ? 'Outlook conectado. Pode fechar esta aba.' : 'Não foi possível conectar o Outlook.')
   if (!e || !code || Date.now() - new Date(e.criado_em).getTime() > 15 * 60_000) return volta('erro')
   try {
     const t = await token({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT })
@@ -243,7 +257,7 @@ Deno.serve(async req => {
   if (!CLIENT_ID || !CLIENT_SECRET) return json({ erro: 'Integração com o Outlook ainda não configurada (MS_CLIENT_ID / MS_CLIENT_SECRET).' }, 503)
 
   try {
-    const { acao } = await req.json().catch(() => ({ acao: null }))
+    const { acao, volta } = await req.json().catch(() => ({ acao: null, volta: null }))
 
     const segredo = req.headers.get('x-cron-segredo')
     if (segredo) {
@@ -263,7 +277,7 @@ Deno.serve(async req => {
 
     if (acao === 'conectar') {
       const estado = crypto.randomUUID()
-      await admin.from('oauth_estados').insert({ estado, user_id: u.user.id })
+      await admin.from('oauth_estados').insert({ estado, user_id: u.user.id, volta: origem(volta) })
       const q = new URLSearchParams({
         client_id: CLIENT_ID, response_type: 'code', redirect_uri: REDIRECT, response_mode: 'query',
         scope: ESCOPOS, state: estado, prompt: 'select_account',

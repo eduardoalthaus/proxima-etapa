@@ -1,3 +1,4 @@
+-- O e-mail do admin aqui era fixo; desde 20261030000000_instalacao_portatil ele fica em config_privada.
 -- Perfil do candidato montado a partir do currículo
 alter table public.perfil_busca
   add column nome text,

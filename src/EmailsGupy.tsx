@@ -35,7 +35,7 @@ export default function EmailsGupy({ vagas, onAtualizou }: { vagas: Vaga[]; onAt
   async function chamar(acao: 'conectar' | 'ler') {
     setOcupado(true)
     setMsg(null)
-    const { data, error } = await supabase.functions.invoke('outlook', { body: { acao } })
+    const { data, error } = await supabase.functions.invoke('outlook', { body: { acao, volta: location.origin } })
     setOcupado(false)
     if (error || data?.erro) {
       const detalhe = await (error as { context?: Response })?.context?.json?.().catch(() => null)

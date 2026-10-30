@@ -76,6 +76,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); ou
 .alterna button { border: 0; background: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; color: var(--muted); }
 .alterna button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
 .erro { background: var(--danger); color: #fff; padding: 8px 16px; cursor: pointer; }
+.faixa-demo {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 8px 16px; font-size: 13px;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border-bottom: 1px solid var(--border);
+}
+.demo-convite {
+  display: grid; gap: 6px; justify-items: center; text-align: center;
+  margin-top: 8px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.demo-convite > span { font-size: 13px; color: var(--muted); }
+.demo-convite .btn { text-decoration: none; }
 main { flex: 1; min-height: 0; position: relative; }
 
 /* Mapa mental */

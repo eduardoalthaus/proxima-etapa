@@ -14,7 +14,7 @@ Site: https://vagas-remotas.vercel.app · Repo: github.com/eduardoalthaus/vagas-
 
 `vagas`, `eventos` (andamento de cada vaga), `sugestoes` (vagas encontradas pela busca), `perfil_busca` (filtro de cada usuário),
 `modelos` (textos "sobre mim" por tipo de vaga), `convites`, `conexoes_email` (Outlook; o `refresh_token` não é legível pelo navegador),
-`emails_recebidos`, `oauth_estados` e `config_privada` (segredo do cron; sem políticas, só service role/postgres).
+`emails_recebidos`, `oauth_estados` e `config_privada` (segredo do cron, admin e URL do projeto; sem políticas, só service role/postgres).
 O histórico de schema está em `supabase/migrations/`.
 
 ## Edge Functions (`supabase/functions/`)
@@ -31,8 +31,14 @@ O histórico de schema está em `supabase/migrations/`.
 
 ## Regras de negócio que não estão óbvias no código
 
-- Admin = `admin@exemplo.com`, fixo em **dois lugares**: `public.e_admin()`/`public.somente_dono()` no banco e `ADMIN` em `src/App.tsx`.
-  Cadastro só passa pelo trigger `somente_dono` se o e-mail for o admin ou estiver em `convites`.
+- O repositório é pensado para ser **público e instalável por outras pessoas**: nada de e-mail, URL do projeto ou segredo no código.
+  O que muda entre instalações fica em `config_privada`: `admin_email` (a primeira conta criada vira admin), `cadastro_aberto` (`sim` libera o cadastro),
+  `url_projeto` (usada por `public.chamar_funcao`, que o pg_cron chama) e `cron_segredo`.
+- Admin: `public.e_admin()` compara o e-mail do JWT com `admin_email`; o front pergunta via `rpc('e_admin')`.
+  Cadastro só passa pelo trigger `somente_dono` se o e-mail for o admin, estiver em `convites` ou `cadastro_aberto = 'sim'`.
+- Modo demonstração (`?demo` na URL, ou automático sem `VITE_SUPABASE_URL`): `src/demonstracao.ts` imita o cliente do Supabase em memória
+  com os dados fictícios de `src/demonstracao-dados.ts`. Ao usar um método novo do supabase-js no app, implementar também lá.
+- O OAuth do Outlook volta para a origem enviada pelo front no clique em Conectar (`oauth_estados.volta`), com `SITE_URL` como reserva.
 - O currículo (PDF/.docx) é lido **no navegador** (`src/curriculo.ts`, pdf.js + mammoth) e analisado por regras com `src/dicionario.ts`, sem IA (decisão do Eduardo).
   O arquivo não é enviado nem guardado.
 - Não existe candidatura automática: Gupy, LinkedIn, Indeed e os ATS (Greenhouse, Lever…) não têm API para candidatos.
@@ -53,7 +59,8 @@ npx vercel --prod --yes   # publica o site (a CLI já está ligada ao projeto em
 
 - **Funções e migrações** foram publicadas pelo MCP do Supabase (`deploy_edge_function` / `apply_migration`), porque a CLI do Supabase não está logada.
   Ao mudar o banco, aplicar a migração **e** salvar o mesmo SQL em `supabase/migrations/`. Ao mudar uma função, publicar o conteúdo exato do arquivo local.
-- Para testar uma tela sem login, criar uma página temporária (`demo.html` + `src/demo-*.tsx`) com dados de exemplo e **apagá-la antes do commit**.
+- Para testar uma tela sem login, usar o modo demonstração (`npm run dev` sem `.env.local`, ou `/?demo`).
+- Os prints do README (`docs/*.png`) são tirados da demonstração em 1360×820.
 - Para disparar uma função à mão: `select net.http_post(...)` com o header `x-cron-segredo`, e ler o resultado em `net._http_response`.
 
 ## Estilo

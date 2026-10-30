@@ -1,4 +1,3 @@
--- Aplicada no projeto Supabase "vagas-remotas" (uplzlegibigvnaftrcfr)
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 

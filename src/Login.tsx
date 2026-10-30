@@ -36,6 +36,11 @@ export default function Login() {
         <button type="button" className="link" onClick={() => { setCriando(!criando); setMsg(null) }}>
           {criando ? 'Já tenho conta' : 'Primeiro acesso? Criar conta'}
         </button>
+        <div className="demo-convite">
+          <span>Só quer conhecer?</span>
+          <a className="btn" href={`${location.pathname}?demo`}>Ver demonstração sem login</a>
+          <small className="muted">Dados fictícios. Nada do que você fizer fica salvo.</small>
+        </div>
       </form>
     </div>
   )
