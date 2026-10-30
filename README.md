@@ -1,4 +1,4 @@
-# 🧭 Vagas Remotas
+# 🎯 Próxima Etapa
 
 **Organizador de busca de emprego.** Reúne vagas de vários portais, dá uma nota para cada uma de acordo com o seu currículo,
 acompanha cada candidatura num mapa e num kanban, e lê os e-mails dos processos seletivos para mover as vagas de etapa sozinho.
@@ -6,7 +6,7 @@ acompanha cada candidatura num mapa e num kanban, e lê os e-mails dos processos
 Nasceu para resolver um problema meu: acompanhar dezenas de candidaturas em portais diferentes, cada uma numa etapa.
 Hoje funciona para qualquer área (TI, saúde, comercial, indústria, administrativo…) e outras pessoas usam por convite.
 
-**[▶ Ver a demonstração](https://vagas-remotas.vercel.app/?demo)**: sem login, com dados fictícios. Dá para aplicar em vagas, mover cards
+**[▶ Ver a demonstração](https://proxima-etapa.vercel.app/?demo)**: sem login, com dados fictícios. Dá para aplicar em vagas, mover cards
 e anotar à vontade; ao sair ou recarregar a página, tudo volta ao início.
 
 ![Mapa de candidaturas](docs/mapa.png)
@@ -34,7 +34,7 @@ e anotar à vontade; ao sair ou recarregar a página, tudo volta ao início.
 |---|---|
 | 📄 **Perfil a partir do currículo** | Você envia o PDF ou Word e o app identifica cargos, competências, nível, cidade e inglês. Tudo é lido no navegador, por regras, sem IA, e o arquivo não sai do seu computador. |
 | 🔎 **Busca automática de vagas** | Duas vezes por dia, consulta Gupy, Sólides, Remotar, repositórios de vagas do GitHub e, se você tem inglês, Remotive, Himalayas, Jobicy e RemoteOK. |
-| 🎯 **Nota de 0 a 100** | Cada vaga recebe uma nota de compatibilidade com o motivo à vista ("cargo: analista de dados", "sql, python"). Vagas repetidas entre portais aparecem uma vez só. |
+| 📊 **Nota de 0 a 100** | Cada vaga recebe uma nota de compatibilidade com o motivo à vista ("cargo: analista de dados", "sql, python"). Vagas repetidas entre portais aparecem uma vez só. |
 | 🗺️ **Mapa e kanban** | As candidaturas aparecem em volta de você, agrupadas por etapa, ou num quadro em que dá para arrastar os cards. Vagas sem resposta há 7 dias ou mais ganham o aviso ⏳. |
 | 📝 **Kit de candidatura** | Textos "sobre mim" por tipo de vaga, com `%empresa%` e `%cargo%` preenchidos sozinhos, e as habilidades que o formulário pede, prontas para copiar. |
 | 📬 **Leitura dos e-mails** | Conectando o Outlook, o app lê os e-mails da Gupy de hora em hora, reconhece entrevista, teste, proposta e recusa, e move a vaga de etapa. |
@@ -80,8 +80,8 @@ flowchart LR
 Precisa do [Node.js](https://nodejs.org) 20 ou mais novo.
 
 ```bash
-git clone https://github.com/eduardoalthaus/vagas-remotas.git
-cd vagas-remotas
+git clone https://github.com/eduardoalthaus/proxima-etapa.git
+cd proxima-etapa
 npm install
 npm run dev
 ```

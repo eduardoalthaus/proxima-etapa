@@ -1,6 +1,6 @@
 {
-  "name": "Vagas Remotas",
-  "short_name": "Vagas",
+  "name": "Próxima Etapa",
+  "short_name": "Próxima Etapa",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#12141b",

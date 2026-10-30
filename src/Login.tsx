@@ -25,9 +25,9 @@ export default function Login() {
   return (
     <div className="login">
       <form onSubmit={enviar} className="login-card">
-        <div className="logo">🧭</div>
-        <h1>Vagas Remotas</h1>
-        <p className="muted">Seu mapa de candidaturas</p>
+        <div className="logo">🎯</div>
+        <h1>Próxima Etapa</h1>
+        <p className="muted">Sua busca de emprego, etapa por etapa</p>
         <input type="email" placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" />
         <input type="password" placeholder="Senha" value={senha} onChange={e => setSenha(e.target.value)} required minLength={8}
           autoComplete={criando ? 'new-password' : 'current-password'} />
